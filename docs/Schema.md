@@ -1,7 +1,7 @@
 # Alba-SBT Database Schema
 
-**최종 수정**: 2026-04-10  
-**상태**: Phase 1 기본 스키마 확정
+**최종 수정**: 2026-04-29  
+**상태**: Phase 1 스키마 확정 (POS 제외)
 
 ---
 
@@ -20,15 +20,31 @@ Alba-SBT 시스템의 필수 테이블을 **앱 흐름 순서**대로 정렬.
 | `id` | UUID | 기본 키 (Primary Key) |
 | `account_type` | ENUM('worker', 'manager') | 계정 유형: 알바생 또는 사장님 |
 | `name` | VARCHAR | 사용자 이름 |
-| `email` | VARCHAR (UNIQUE) | 이메일 주소 |
-| `phone` | VARCHAR | 휴대폰 번호 |
-| `wallet_address` | VARCHAR (UNIQUE, NULLABLE) | 지갑 주소 (MetaMask 연동) |
+| `email` | VARCHAR (UNIQUE, NULLABLE) | 이메일 주소 |
+| `phone` | VARCHAR (NULLABLE) | 휴대폰 번호 |
+| `wallet_address` | VARCHAR (UNIQUE) | 지갑 주소 (MetaMask 연동, SIWE 인증 기준) |
 | `did` | VARCHAR (NULLABLE) | DID (Decentralized Identifier) |
-| `password_hash` | VARCHAR | 비밀번호 해시 |
 | `created_at` | TIMESTAMP | 가입 일시 |
 | `updated_at` | TIMESTAMP | 최종 수정 일시 |
 
-**파트**: 앱 — 공통
+**파트**: 앱 — 공통  
+**참고**: SIWE(Sign-In with Ethereum) 기반 인증으로 password_hash 불필요
+
+---
+
+### `push_tokens` — 푸시 알림 디바이스 토큰
+| 컬럼 | 타입 | 설명 |
+|------|------|------|
+| `id` | UUID | 기본 키 |
+| `user_id` | UUID (FK) | 사용자 ID (`users.id`) |
+| `token` | VARCHAR | Expo Push Token 또는 FCM Token |
+| `platform` | ENUM('ios', 'android') | 플랫폼 구분 |
+| `is_active` | BOOLEAN | 활성 여부 |
+| `created_at` | TIMESTAMP | 등록 일시 |
+| `updated_at` | TIMESTAMP | 수정 일시 |
+
+**파트**: 앱 — 공통  
+**참고**: 승인 요청·승급 알림 등 Expo Push/FCM 발송 시 참조
 
 ---
 
@@ -40,17 +56,36 @@ Alba-SBT 시스템의 필수 테이블을 **앱 흐름 순서**대로 정렬.
 | `id` | UUID | 기본 키 |
 | `manager_id` | UUID (FK) | 사장님 ID (`users.id`) |
 | `name` | VARCHAR | 매장명 |
-| `category` | ENUM('food', 'retail', 'service', 'other') | 업종 분류 (EAS_EXP_TIME에 사용) |
+| `store_code` | VARCHAR(6) (UNIQUE) | 6자리 자동 생성 매장코드 (알바생 등록 시 입력) |
+| `category` | ENUM('food', 'retail', 'service', 'other') | 업종 대분류 (EAS_EXP_TIME에 사용) |
+| `sub_category` | VARCHAR (NULLABLE) | 하위 업종 (예: 카페, 편의점, 패스트푸드) |
 | `address` | VARCHAR | 매장 주소 |
 | `latitude` | DECIMAL(10, 8) | 위도 (GPS 검증용) |
 | `longitude` | DECIMAL(11, 8) | 경도 (GPS 검증용) |
 | `gps_radius_meters` | INT | GPS 허용 반경 (기본값: 50m) |
 | `qr_validity_start_hour` | INT | 당일 QR 유효 시작 시간 (예: 8 = 08:00) |
 | `qr_validity_end_hour` | INT | 당일 QR 유효 종료 시간 (예: 23 = 23:00) |
+| `business_number` | VARCHAR (NULLABLE) | 사업자번호 (선택 입력) |
+| `contact` | VARCHAR (NULLABLE) | 연락처 |
 | `created_at` | TIMESTAMP | 등록 일시 |
 | `updated_at` | TIMESTAMP | 수정 일시 |
 
 **파트**: 앱 — 매장 관리
+
+---
+
+### `qr_tokens` — 출퇴근 QR 토큰
+| 컬럼 | 타입 | 설명 |
+|------|------|------|
+| `id` | UUID | 기본 키 |
+| `store_id` | UUID (FK) | 매장 ID (`stores.id`) |
+| `token` | VARCHAR (UNIQUE) | QR 토큰값 (무작위 생성) |
+| `expires_at` | TIMESTAMP | 만료 일시 (생성 시각 + 30초) |
+| `created_by` | UUID (FK) | 생성한 사장님 ID (`users.id`) |
+| `created_at` | TIMESTAMP | 생성 일시 |
+
+**파트**: 앱 — 매장 관리  
+**참고**: 사장님이 [QR 생성] 버튼 클릭 시 생성 → 30초 유효 → 자동 소멸. 알바생 출퇴근 스캔 시 `attendance.qr_scanned`와 대조 검증
 
 ---
 
@@ -64,11 +99,13 @@ Alba-SBT 시스템의 필수 테이블을 **앱 흐름 순서**대로 정렬.
 | `store_id` | UUID (FK) | 매장 ID (`stores.id`) |
 | `staff_number` | VARCHAR (UNIQUE) | 사번 (매장별 출퇴근 QR 활성화 기준) |
 | `hire_date` | DATE | 입사일 |
-| `status` | ENUM('active', 'inactive') | 근무 상태 |
+| `status` | ENUM('pending', 'active', 'inactive') | 근무 상태 |
+| `approved_at` | TIMESTAMP (NULLABLE) | 사장님 승인 일시 |
 | `created_at` | TIMESTAMP | 배정 일시 |
 | `updated_at` | TIMESTAMP | 수정 일시 |
 
-**파트**: 앱 — 직원 관리
+**파트**: 앱 — 직원 관리  
+**참고**: 알바생이 `store_code` 입력 → `status='pending'` 생성 → 사장님이 승인하면 `status='active'`로 변경
 
 ---
 
@@ -96,22 +133,25 @@ Alba-SBT 시스템의 필수 테이블을 **앱 흐름 순서**대로 정렬.
 | `id` | UUID | 기본 키 |
 | `staff_assignment_id` | UUID (FK) | 직원 배정 ID (`staff_assignments.id`) |
 | `store_id` | UUID (FK) | 매장 ID (`stores.id`) |
+| `type` | ENUM('regular', 'extension') | 근무 유형: 정규 또는 연장근무 |
 | `status` | ENUM('on_time', 'late', 'absent') | 근태 상태 (EAS_FAITH_ATT 판정용) |
 | `clock_in_time` | TIMESTAMP | 실제 출근 시간 |
 | `clock_out_time` | TIMESTAMP (NULLABLE) | 실제 퇴근 시간 |
+| `extension_hours` | DECIMAL(5, 2) (NULLABLE) | 연장근무 시간 (type='extension'일 때 사용) |
 | `clock_in_latitude` | DECIMAL(10, 8) (NULLABLE) | 출근 스캔 GPS 위도 |
 | `clock_in_longitude` | DECIMAL(11, 8) (NULLABLE) | 출근 스캔 GPS 경도 |
 | `gps_verified` | BOOLEAN | GPS 검증 통과 여부 |
-| `qr_scanned` | VARCHAR (NULLABLE) | 스캔한 QR 코드값 |
+| `qr_scanned` | VARCHAR (NULLABLE) | 스캔한 QR 토큰값 (`qr_tokens.token`과 대조) |
 | `created_at` | TIMESTAMP | 기록 생성 일시 |
 
-**파트**: 앱 — 근태
-
-**참고**: 근무 기간 집계는 `MIN(clock_in_time)` ~ `MAX(clock_out_time)` 기준 (store_id 별) → EAS_EXP_TIME 발행 조건 판정
+**파트**: 앱 — 근태  
+**참고**:
+- 근무 기간 집계: `MIN(clock_in_time)` ~ `MAX(clock_out_time)` (store_id 별) → `EAS_EXP_TIME` 발행 조건 판정
+- 연장근무 집계: `SUM(extension_hours)` WHERE `type='extension'` → `EAS_SUB_SUPPORT` 판정 (누적 30시간 이상)
 
 ---
 
-## 🔷 앱 — 스케줄 변경 & 대타
+## 🔷 앱 — 스케줄 변경 & 연장근무
 
 ### `schedule_changes` — 스케줄 변경 요청 로그
 | 컬럼 | 타입 | 설명 |
@@ -120,84 +160,36 @@ Alba-SBT 시스템의 필수 테이블을 **앱 흐름 순서**대로 정렬.
 | `schedule_id` | UUID (FK) | 원래 스케줄 ID (`schedules.id`) |
 | `staff_assignment_id` | UUID (FK) | 요청자 ID (`staff_assignments.id`) |
 | `requested_at` | TIMESTAMP | 변경 요청 시간 |
-| `scheduled_date` | DATE | 근무 예정일 |
+| `scheduled_date` | DATE | 변경 전 근무 예정일 |
+| `new_date` | DATE (NULLABLE) | 변경 요청한 새 날짜 |
+| `new_start_time` | TIME (NULLABLE) | 변경 요청한 새 시작 시간 |
+| `new_end_time` | TIME (NULLABLE) | 변경 요청한 새 종료 시간 |
 | `change_hour_threshold` | INT | 변경 기한 (근무 당일 N시간 이전) |
+| `reason` | TEXT (NULLABLE) | 변경 사유 |
 | `status` | ENUM('pending', 'approved', 'rejected') | 요청 상태 |
 | `created_at` | TIMESTAMP | 기록 생성 일시 |
 
-**파트**: 앱 — 스케줄 관리
-
+**파트**: 앱 — 스케줄 관리  
 **참고**: EAS_SCHED_RELI 판정용 (3개월 변경 0회 조건)
 
 ---
 
-### `substitute_requests` — 대타 지원 로그
+### `overtime_requests` — 연장근무 신청
 | 컬럼 | 타입 | 설명 |
 |------|------|------|
 | `id` | UUID | 기본 키 |
-| `original_schedule_id` | UUID (FK) | 공석 스케줄 ID (`schedules.id`) |
-| `volunteer_id` | UUID (FK) | 지원자 ID (`staff_assignments.id`) |
-| `status` | ENUM('pending', 'accepted', 'rejected') | 지원 상태 |
-| `support_date` | DATE | 지원 예정일 |
-| `support_hours` | DECIMAL | 지원 시간 |
-| `created_at` | TIMESTAMP | 지원 일시 |
+| `staff_assignment_id` | UUID (FK) | 요청자 ID (`staff_assignments.id`) |
+| `schedule_id` | UUID (FK) | 연장 기준 스케줄 ID (`schedules.id`) |
+| `requested_date` | DATE | 연장근무 예정일 |
+| `extension_hours` | DECIMAL(5, 2) | 요청 연장 시간 |
+| `reason` | TEXT (NULLABLE) | 연장 사유 |
+| `status` | ENUM('pending', 'approved', 'rejected') | 승인 상태 |
+| `requested_at` | TIMESTAMP | 신청 일시 |
+| `responded_at` | TIMESTAMP (NULLABLE) | 사장님 처리 일시 |
+| `created_at` | TIMESTAMP | 생성 일시 |
 
-**파트**: 앱 — 스케줄 관리
-
-**참고**: EAS_SUB_SUPPORT 판정용 (지원 5회 이상 조건, status='accepted')
-
----
-
-## 🔷 POS — 메뉴 & 판매 기록
-
-### `products` — 메뉴 저장소
-| 컬럼 | 타입 | 설명 |
-|------|------|------|
-| `id` | UUID | 기본 키 |
-| `store_id` | UUID (FK) | 매장 ID (`stores.id`) |
-| `name` | VARCHAR | 메뉴명 (예: 아메리카노) |
-| `price` | INT | 판매 가격 (원) |
-| `category` | VARCHAR | 카테고리 (예: 음료, 음식) |
-| `is_active` | BOOLEAN | 판매 활성 여부 |
-| `created_at` | TIMESTAMP | 등록 일시 |
-| `updated_at` | TIMESTAMP | 수정 일시 |
-
-**파트**: POS — 메뉴 관리
-
----
-
-### `payment_logs` — 결제 실적
-| 컬럼 | 타입 | 설명 |
-|------|------|------|
-| `id` | UUID | 기본 키 |
-| `staff_assignment_id` | UUID (FK) | 결제 처리자 ID (`staff_assignments.id`) |
-| `product_id` | UUID (FK) | 판매 상품 ID (`products.id`) |
-| `store_id` | UUID (FK) | 매장 ID (`stores.id`) |
-| `total_amount` | INT | 결제 금액 (원) |
-| `quantity` | INT | 판매 수량 |
-| `payment_method` | VARCHAR | 결제 수단 (현금, 카드 등) |
-| `created_at` | TIMESTAMP | 결제 일시 |
-
-**파트**: POS — 결제 로그
-
-**참고**: EAS_SVC_COUNT 판정용 (결제 1,000건 이상 조건)
-
----
-
-### `making_logs` — 제조 실적
-| 컬럼 | 타입 | 설명 |
-|------|------|------|
-| `id` | UUID | 기본 키 |
-| `staff_assignment_id` | UUID (FK) | 제조자 ID (`staff_assignments.id`) |
-| `product_id` | UUID (FK) | 제조 상품 ID (`products.id`) |
-| `store_id` | UUID (FK) | 매장 ID (`stores.id`) |
-| `product_name` | VARCHAR | 제조 상품명 |
-| `quantity` | INT | 제조 수량 |
-| `created_at` | TIMESTAMP | 제조 완료 일시 |
-
-**파트**: POS — 제조 로그
-
-**참고**: EAS_SVC_COUNT 판정용 (제조 1,000건 이상 조건)
+**파트**: 앱 — 스케줄 관리  
+**참고**: 현재 월 + 익월까지 신청 가능. 승인된 연장근무 시간은 `attendance.extension_hours`로 기록 → EAS_SUB_SUPPORT 집계에 사용
 
 ---
 
@@ -208,7 +200,7 @@ Alba-SBT 시스템의 필수 테이블을 **앱 흐름 순서**대로 정렬.
 |------|------|------|
 | `id` | UUID | 기본 키 |
 | `user_id` | UUID (FK) | 사용자 ID (`users.id`) |
-| `eas_type` | ENUM('EAS_EXP_TIME', 'EAS_SVC_COUNT', 'EAS_FAITH_ATT', 'EAS_SCHED_RELI', 'EAS_SUB_SUPPORT') | EAS 유형 |
+| `eas_type` | ENUM('EAS_EXP_TIME', 'EAS_FAITH_ATT', 'EAS_SCHED_RELI', 'EAS_SUB_SUPPORT') | EAS 유형 |
 | `eas_uid` | VARCHAR (UNIQUE) | 온체인 EAS UID (Sepolia) |
 | `attestation_data` | JSONB | EAS 증명 데이터 (업종, 기간, 횟수 등) |
 | `issued_at` | TIMESTAMP | 발행 일시 |
@@ -260,17 +252,14 @@ Alba-SBT 시스템의 필수 테이블을 **앱 흐름 순서**대로 정렬.
 
 ```
 users (1) ──→ staff_assignments (N) ──→ stores (1)
-         ──→ (매장 접근 권한)
+users (1) ──→ push_tokens (N)
 
 staff_assignments (1) ──→ schedules (N)
                     ──→ attendance (N)
-                    ──→ payment_logs (N)
-                    ──→ making_logs (N)
                     ──→ schedule_changes (N)
+                    ──→ overtime_requests (N)
 
-stores (1) ──→ products (N)
-         ──→ payment_logs (N)
-         ──→ making_logs (N)
+stores (1) ──→ qr_tokens (N)
 
 users (1) ──→ eas_attestations (N)
         ──→ level_up_requests (N)
@@ -286,6 +275,15 @@ users (1) ──→ eas_attestations (N)
 3. **조건 판정 최적화**: EAS 발행 및 레벨업 판정이 쿼리로 가능하도록 컬럼 설계
 4. **확장성**: Phase 2 블록체인 통합을 위한 온체인 메타데이터 컬럼 예비 (transaction_hash, eas_uid 등)
 
+### EAS 판정 데이터 매핑 요약
+
+| EAS 유형 | 판정 기준 | 참조 테이블 / 컬럼 |
+|----------|----------|-----------------|
+| `EAS_EXP_TIME` | 동일 업종 누적 6개월 | `attendance` — `MIN/MAX(clock_in_time)`, `store_id` 기준 |
+| `EAS_FAITH_ATT` | 3개월 지각·결근 0회 | `attendance.status` — 'on_time' / 'late' / 'absent' |
+| `EAS_SCHED_RELI` | 3개월 스케줄 변경 0회 | `schedule_changes` — COUNT(status != 'rejected') |
+| `EAS_SUB_SUPPORT` | 누적 연장근무 30시간 이상 | `attendance` — `SUM(extension_hours)` WHERE `type='extension'` |
+
 ---
 
-**작성 완료**: 2026-04-10
+**작성 완료**: 2026-04-29
