@@ -31,6 +31,21 @@ Alba-SBT 시스템의 필수 테이블을 **앱 흐름 순서**대로 정렬.
 
 ---
 
+### `siwe_nonces` — SIWE 인증용 임시 nonce
+| 컬럼 | 타입 | 설명 |
+|------|------|------|
+| `id` | UUID | 기본 키 |
+| `nonce` | VARCHAR (UNIQUE) | SIWE 서명 요청용 임시 nonce |
+| `wallet_address` | VARCHAR | 요청 지갑 주소 |
+| `expires_at` | TIMESTAMP | 만료 일시 (발급 시각 + 5분) |
+| `created_at` | TIMESTAMP | 생성 일시 |
+
+**파트**: 앱 — 공통  
+**담당**: C  
+**참고**: SIWE 인증 흐름 — nonce 발급 → 지갑 서명 → 서명 검증 후 nonce 즉시 삭제 (재사용 방지). 만료된 nonce는 C가 주기적으로 정리.
+
+---
+
 ## 🔷 앱 — 매장 관리
 
 ### `stores` — 매장 정보
@@ -83,6 +98,7 @@ Alba-SBT 시스템의 필수 테이블을 **앱 흐름 순서**대로 정렬.
 | `user_id` | UUID (FK) | 알바생 ID (`users.id`) |
 | `store_id` | UUID (FK) | 매장 ID (`stores.id`) |
 | `staff_number` | VARCHAR (UNIQUE) | 사번 (매장별 출퇴근 QR 활성화 기준) |
+| `status` | ENUM('pending', 'active') | 배정 상태: 승인 대기 / 활성 |
 | `approved_at` | TIMESTAMP (NULLABLE) | 사장님 승인 일시 |
 | `created_at` | TIMESTAMP | 배정 일시 |
 | `updated_at` | TIMESTAMP | 수정 일시 |
@@ -149,11 +165,12 @@ Alba-SBT 시스템의 필수 테이블을 **앱 흐름 순서**대로 정렬.
 | `new_end_time` | TIME (NULLABLE) | 변경 요청한 새 종료 시간 |
 | `change_hour_threshold` | INT | 변경 기한 (근무 당일 N시간 이전) |
 | `reason` | TEXT (NULLABLE) | 변경 사유 |
+| `reason_category` | ENUM('unavoidable', 'personal') (NULLABLE) | 변경 사유 분류. unavoidable: 가족사, 건강문제 (EAS 판정 제외). personal: 개인 여행, 학교 시험 등 (EAS 판정 포함). |
 | `status` | ENUM('pending', 'approved', 'rejected') | 요청 상태 |
 | `created_at` | TIMESTAMP | 기록 생성 일시 |
 
 **파트**: 앱 — 스케줄 관리  
-**참고**: EAS_SCHED_RELI 판정용 (3개월 변경 0회 조건)
+**참고**: EAS_SCHED_RELI 판정용. 3개월 동안 개인 사유(personal)로 인한 사장님 승인 변경 0회 조건. 가족사·건강문제(unavoidable)는 EAS 판정 제외.
 
 ---
 
@@ -172,7 +189,7 @@ Alba-SBT 시스템의 필수 테이블을 **앱 흐름 순서**대로 정렬.
 | `created_at` | TIMESTAMP | 생성 일시 |
 
 **파트**: 앱 — 스케줄 관리  
-**참고**: 현재 월 + 익월까지 신청 가능. 승인된 연장근무 시간은 `attendance.extension_hours`로 기록 → EAS_SUB_SUPPORT 집계에 사용
+**참고**: 현재 월 + 익월까지 신청 가능. 승인 후 알바생이 실제 연장 clock_out 완료 시 B-1이 `attendance(type='extension')` 레코드 자동 INSERT → `extension_hours` 기록 → EAS_SUB_SUPPORT 집계에 사용
 
 ---
 
@@ -185,10 +202,87 @@ Alba-SBT 시스템의 필수 테이블을 **앱 흐름 순서**대로 정렬.
 | `user_id` | UUID (FK) | 사용자 ID (`users.id`) |
 | `eas_type` | ENUM('EAS_EXP_TIME', 'EAS_FAITH_ATT', 'EAS_SCHED_RELI', 'EAS_SUB_SUPPORT') | EAS 유형 |
 | `eas_uid` | VARCHAR (UNIQUE) | 온체인 EAS UID (Sepolia) |
-| `attestation_data` | JSONB | EAS 증명 데이터 (업종, 기간, 횟수 등) |
+| `attestation_data` | JSONB | EAS 타입별 증명 데이터 (상세 구조는 아래 참조) |
 | `issued_at` | TIMESTAMP | 발행 일시 |
 | `transaction_hash` | VARCHAR (NULLABLE) | 블록체인 트랜잭션 해시 |
+| `status` | ENUM('pending', 'issued', 'failed') | EAS 발급 상태 (기본값: 'pending') |
+| `retry_count` | INT (DEFAULT 0) | Edge Function 재시도 횟수 (최대 3회) |
 | `created_at` | TIMESTAMP | 기록 생성 일시 |
+
+#### `attestation_data` 구조 상세 (EAS 타입별)
+
+**EAS_EXP_TIME** (매장별 독립)
+```json
+{
+  "store_id": "uuid",
+  "store_name": "스타벅스",
+  "category": "F&B",
+  "sub_category": "카페",
+  "period_months": 6,
+  "start_date": "2025-11-01",
+  "end_date": "2026-05-01"
+}
+```
+
+**EAS_FAITH_ATT** (매장별 독립)
+```json
+{
+  "store_id": "uuid",
+  "store_name": "스타벅스",
+  "category": "F&B",
+  "sub_category": "카페",
+  "attendance_rate": 100.0,
+  "period_days": 90,
+  "start_date": "2026-02-01",
+  "end_date": "2026-05-01"
+}
+```
+
+**EAS_SCHED_RELI** (매장별 독립)
+```json
+{
+  "store_id": "uuid",
+  "store_name": "스타벅스",
+  "category": "F&B",
+  "sub_category": "카페",
+  "period_days": 90,
+  "personal_changes_count": 0,
+  "unavoidable_changes_count": 2,
+  "start_date": "2026-02-01",
+  "end_date": "2026-05-01"
+}
+```
+
+**EAS_SUB_SUPPORT** (매장 통합 누적)
+```json
+{
+  "total_hours": 30.5,
+  "issued_date": "2026-05-01",
+  "stores": [
+    {
+      "store_id": "uuid-cafe",
+      "store_name": "스타벅스",
+      "category": "F&B",
+      "sub_category": "커피",
+      "hours": 5.0
+    },
+    {
+      "store_id": "uuid-convenient",
+      "store_name": "CU",
+      "category": "유통·물류",
+      "sub_category": "편의점",
+      "hours": 15.0
+    },
+    {
+      "store_id": "uuid-delivery",
+      "store_name": "배달의민족",
+      "category": "서비스",
+      "sub_category": "배달",
+      "hours": 10.5
+    }
+  ]
+}
+```
 
 **파트**: 블록체인 — EAS 추적
 
@@ -202,6 +296,7 @@ Alba-SBT 시스템의 필수 테이블을 **앱 흐름 순서**대로 정렬.
 | `current_level` | INT | 현재 레벨 (1~10) |
 | `target_level` | INT | 목표 레벨 |
 | `status` | ENUM('pending', 'awaiting_approval', 'multisig_signed', 'minted', 'rejected') | 승급 상태 |
+| `nonce` | BIGINT | EIP-712 서명 재사용 방지 nonce (컨트랙트 on-chain nonce와 동기화) |
 | `manager_signature` | VARCHAR (NULLABLE) | 사장님 EIP-712 서명 |
 | `platform_signature` | VARCHAR (NULLABLE) | 플랫폼 서명 |
 | `sbt_token_id` | VARCHAR (NULLABLE) | 발급된 SBT 토큰 ID |
@@ -227,8 +322,8 @@ Alba-SBT 시스템의 필수 테이블을 **앱 흐름 순서**대로 정렬.
 | `updated_at` | TIMESTAMP | 수정 일시 |
 
 **파트**: 블록체인 — 뱃지 메타데이터  
-**담당**: B-2 (뱃지 이미지 디자인 및 Supabase Storage 업로드)  
-**참고**: 각 레벨별로 1개 레코드 생성 (Lv.1~10). 이미지는 B-2가 준비 → Supabase Storage에 업로드 → `image_uri` 저장. `sbt_tokens`에서는 `level`을 기준으로 JOIN하여 `badge_image_uri` 획득.
+**담당**: B-2 (PM 제공 원본 이미지를 Supabase Storage에 업로드·관리)  
+**참고**: 각 레벨별로 1개 레코드 생성 (Lv.1~10). 이미지는 PM이 준비 → B-2가 Supabase Storage에 업로드 → `image_uri` 저장. `sbt_tokens`에서는 `level`을 기준으로 JOIN하여 `badge_image_uri` 획득.
 
 ---
 
@@ -281,10 +376,10 @@ users (1) ──→ eas_attestations (N)
 
 | EAS 유형 | 판정 기준 | 참조 테이블 / 컬럼 |
 |----------|----------|-----------------|
-| `EAS_EXP_TIME` | 동일 업종 누적 6개월 | `attendance` — `MIN/MAX(clock_in_time)`, `store_id` 기준 |
-| `EAS_FAITH_ATT` | 3개월 지각·결근 0회 | `attendance.status` — 'on_time' / 'late' / 'absent' |
-| `EAS_SCHED_RELI` | 3개월 스케줄 변경 0회 | `schedule_changes` — COUNT(status != 'rejected') |
-| `EAS_SUB_SUPPORT` | 누적 연장근무 30시간 이상 | `attendance` — `SUM(extension_hours)` WHERE `type='extension'` |
+| `EAS_EXP_TIME` | 매장별 독립 6개월 달성 | `attendance` — `MIN/MAX(clock_in_time)`, `store_id` 기준 독립 판정 (다중 매장 합산 없음. `type='regular'` 및 `type='extension'` 모두 포함) |
+| `EAS_FAITH_ATT` | 매장별 연속 3개월(90일) 무지각·무결근 | `attendance.status` — `store_id`별 연속 90일 무지각·무결근 판정. 위반 발생 시 해당 `store_id` 카운트 리셋 |
+| `EAS_SCHED_RELI` | 매장별 독립으로 3개월 동안 개인 사유(personal) 승인 변경 0회 (가족사·건강문제 unavoidable 제외. 다중 매장 시 매장마다 별도 발급) | `schedule_changes` — `COUNT(status = 'approved' AND reason_category = 'personal')`, `store_id` 기준 (personal 사유 승인만. unavoidable·pending·rejected 제외. 매장별 독립 판정) |
+| `EAS_SUB_SUPPORT` | 모든 매장 통합 누적 연장근무 30시간 이상 (다중 매장 경력 합산. 달성 시 한 번만 발급) | `attendance` — `SUM(extension_hours)` WHERE `type='extension'` (모든 매장 통합 누적) |
 
 ---
 

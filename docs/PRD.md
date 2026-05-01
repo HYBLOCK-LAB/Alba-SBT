@@ -51,24 +51,29 @@
 
 ## 📱 제품 범위
 
-### 1️⃣ 알바생 앱 (React Native)
+### 통합 앱 (React Native)
 
-**홈 — 섹션 2개**
+하나의 앱에서 계정 유형(알바생/사장님)에 따라 서로 다른 홈 화면을 제공합니다.
+
+**[공통 화면]**
+- 지갑 연동: MetaMask/WalletConnect 연동
+- 계정 유형 선택 (신규 가입 시만): 알바생 / 사장님
+- 로그인 후 `account_type` 기반 자동 라우팅
+
+**[알바생 홈]** (account_type = 'worker') — 섹션 2개
 - 매장 연결: 여러 매장 코드 등록 → 사장님 승인 완료 매장만 목록 활성화
 - 경력 프로필 대시보드: 현재 레벨(SBT 배지 시각화), 레벨업 프로그레스 바, 포트폴리오 공유 QR 버튼
 
-**매장별 랜딩 — 탭 3개**
+**알바생 — 매장별 랜딩 — 탭 3개**
 - QR 스캔: 출/퇴근 등록 (GPS 또는 매장 QR 검증, 불일치 시 거부)
 - 근태 관리: 월간 캘린더, 실시간 근무 현황(예약 퇴근 기준 남은 시간)
 - 신청: 스케줄 변경, 연장근무(익월까지)
 
-### 2️⃣ 사장님 앱 (React Native)
-
-**홈 - 탭 2개**
+**[사장님 홈]** (account_type = 'manager') — 탭 2개
 - 탭 1️⃣ 매장 관리 (등록된 매장 목록 + 매장 등록하기 버튼)
 - 탭 2️⃣ 지원자 경력 검증 (포트폴리오 QR 스캔 → EAS/SBT 신뢰도 리포트 즉시 조회)
 
-**매장별 랜딩 - 탭 4개**
+**사장님 — 매장별 랜딩 — 탭 4개**
 - 인사 관리: 알바 등록(매장코드 발급→알바생 입력→사장 최종 승인) / 삭제 / 상세 조회
 - 근태 관리: 캘린더 일정, 금일 출근 현황표, 근무일 변경 및 연장근무 승인 요청 처리
 - 출퇴근 QR 생성: [QR 생성] 버튼 누르면 30초간 QR 표시 → 30초 후 자동 소멸 / 재생성하려면 버튼 재클릭 / 태블릿 앱고정 운영
@@ -77,6 +82,21 @@
 ---
 
 ## 🎬 사용자 흐름 예시
+
+### 공통 초기 흐름
+
+```
+1. 앱 실행 → 지갑 연동 (MetaMask)
+2. 신규 사용자: 추가 정보 입력 화면
+   - 계정 유형 선택 (알바생 / 사장님)
+   - 이름 (필수)
+   - 이메일 (선택)
+   - 전화번호 (선택)
+   → 입력 완료 시 users 테이블에 저장
+3. 기존 사용자: wallet_address로 account_type 조회 → 자동 라우팅
+   - account_type = 'worker'  → 알바생 홈
+   - account_type = 'manager' → 사장님 홈
+```
 
 ### 알바생 관점
 
@@ -119,7 +139,27 @@
 
 ## 🔐 주요 기능 상세
 
-### 알바생 앱
+### 공통 화면
+
+#### 지갑 연동
+- MetaMask 또는 WalletConnect로 지갑 연결
+- wallet_address 기준 SIWE 인증
+
+#### 추가 정보 입력 (신규 가입 시)
+- 계정 유형 선택: [알바생으로 시작] / [사장님으로 시작] → `users.account_type` 저장
+- 이름 (필수) → `users.name`
+- 이메일 (선택) → `users.email`
+- 전화번호 (선택) → `users.phone`
+- 모든 항목 입력 완료 시 `users` 테이블에 저장
+- 계정 유형은 한 번 설정 후 변경 불가
+
+#### 로그인 후 라우팅
+- `account_type = 'worker'`  → 알바생 홈으로 이동
+- `account_type = 'manager'` → 사장님 홈으로 이동
+
+---
+
+### 알바생 화면 (account_type = 'worker')
 
 #### 홈
 
@@ -139,7 +179,7 @@
 - **[출근 QR 스캔] / [퇴근 QR 스캔] 버튼**
 - **검증 로직 (필수 구현)**:
   - GPS 좌표 ↔ 매장 등록 좌표 반경 50m 이내 대조
-  - OR 사장님 앱에서 생성한 당일 매장 고유 QR 일치 확인
+  - OR 사장님 화면에서 생성한 당일 매장 고유 QR 일치 확인
   - 두 조건 모두 불일치 시: "위치/QR이 일치하지 않습니다" 경고 후 출퇴근 처리 거부
 - **출퇴근 기록**: 검증 통과 시 `attendance` 테이블에 저장 (clock_in, clock_out, gps_coords, shop_id)
 
@@ -148,11 +188,11 @@
 - **실시간 근무 현황**: clock_in 완료 후 예약 퇴근 시간까지 남은 시간 카운트다운 표시
 
 **탭 3: 신청**
-- **스케줄 변경 신청**: 근무 날짜/시간 변경 요청 → 사장님 앱에서 승인/거부 처리
-- **연장근무 신청**: 현재 월 + 익월까지 신청 가능 → 사장님 앱에서 승인/거부 처리
+- **스케줄 변경 신청**: 근무 날짜/시간 변경 요청 → 사장님 화면에서 승인/거부 처리
+- **연장근무 신청**: 현재 월 + 익월까지 신청 가능 → 사장님 화면에서 승인/거부 처리
 
 
-### 사장님 앱
+### 사장님 화면 (account_type = 'manager')
 
 #### 홈 — 탭 2개
 
@@ -207,7 +247,7 @@
 | **Backend** | NestJS + Supabase (PostgreSQL) + Supabase Edge Functions |
 | **Blockchain** | Sepolia testnet + EAS SDK + ERC-5192 (SBT) |
 | **Wallet** | MetaMask / WalletConnect |
-| **Storage** | IPFS 또는 Supabase Storage (SBT 메타데이터) |
+| **Storage** | Supabase Storage (SBT 메타데이터, 뱃지 이미지) |
 
 ---
 
@@ -216,10 +256,11 @@
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                     Presentation Layer                          │
-│  ┌─────────────────┐  ┌─────────────────┐                       │
-│  │  알바생 앱        │  │  사장님 앱         │                      │
-│  │ (React Native)  │  │ (React Native)  │                      │
-│  └─────────────────┘  └─────────────────┘                      │
+│  ┌─────────────────────────────────────────────────────┐        │
+│  │  통합 앱 (React Native)                              │        │
+│  │  공통: 지갑 연동 · 계정 유형 선택 · 로그인 라우팅         │        │
+│  │  알바생 홈 (worker) / 사장님 홈 (manager)             │        │
+│  └─────────────────────────────────────────────────────┘        │
 └─────────────────────────────────────────────────────────────────┘
                             ↓
 ┌─────────────────────────────────────────────────────────────────┐
@@ -229,6 +270,8 @@
 │  │  - Auth Service (DID 연동)                        │           │
 │  │  - Attendance Service (QR, GPS)                  │           │
 │  │  - Verify Service (레벨 판독, EAS 발급 트리거)        │           │
+│  │  - Approval Service (Multisig: nonce 발급,        │           │
+│  │    sig1 수집, sig2 생성, 컨트랙트 호출)              │           │
 │  └──────────────────────────────────────────────────┘           │
 └─────────────────────────────────────────────────────────────────┘
                             ↓
@@ -250,10 +293,11 @@
                             ↓
 ┌─────────────────────────────────────────────────────────────────┐
 │                   Blockchain Layer                               │
-│  ┌──────────┐  ┌─────────────────┐  ┌──────────────────┐       │
-│  │ EAS      │  │ SBT Contract    │  │ IPFS Storage     │       │
-│  │ (Sepolia)│  │ (ERC-5192)      │  │ (Metadata)       │       │
-│  └──────────┘  └─────────────────┘  └──────────────────┘       │
+│  ┌──────────┐  ┌─────────────────┐  ┌──────────────────────┐   │
+│  │ EAS      │  │ SBT Contract    │  │ Supabase Storage     │   │
+│  │ (Sepolia)│  │ (ERC-5192)      │  │ (Metadata, Badges)  │   │
+│  └──────────┘  │ EIP-712 Multisig│  └──────────────────────┘   │
+│                └─────────────────┘                              │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -274,10 +318,10 @@
 
 | EAS 유형 | 이름 | 발급 트리거 | 데이터 필드 | 재발급 |
 |----------|------|------------|-----------|--------|
-| `EAS_EXP_TIME` | 업종 경력 증명 | 동일 업종 누적 6개월 | 업종, 근무지, 기간 | ✅ 반복 가능 |
-| `EAS_FAITH_ATT` | 성실성 증명 | 3개월 지각·결근 0회 | 출근율, 기간 | ✅ 반복 가능 |
-| `EAS_SCHED_RELI` | 신뢰도 증명 | 3개월 스케줄 변경 0회 | 변경 횟수, 점수 | ✅ 반복 가능 |
-| `EAS_SUB_SUPPORT` | 헌신도 증명 | 누적 연장근무 30시간 이상 | 누적 연장 시간 | ✅ 반복 가능 |
+| `EAS_EXP_TIME` | 업종 경력 증명 | 동일 매장에서 6개월 달성 (매장별 독립 판정. 같은 업종이라도 다중 매장 기간 합산 없음. 매장당 EAS 1회 발급) | 업종(대분류), 하위카테고리, 매장명, 근무 기간 | ✅ 반복 가능 |
+| `EAS_FAITH_ATT` | 성실성 증명 | 매장별 연속 3개월(90일) 지각·결근 0회 (각 매장 독립 판정. 위반 1회 발생 시 해당 매장 카운트 리셋. 다중 매장 근무 시 매장마다 별도 EAS 발급 가능) | 출근율, 기간 | ✅ 반복 가능 |
+| `EAS_SCHED_RELI` | 신뢰도 증명 | 매장별 독립으로 3개월 동안 개인 사유(personal)로 인한 사장님 승인 스케줄 변경 0회 (가족사·건강문제 등 필연적 사유는 제외. 다중 매장 근무 시 매장마다 별도 EAS 발급 가능) | 변경 횟수, 사유 분류, 점수 | ✅ 반복 가능 |
+| `EAS_SUB_SUPPORT` | 헌신도 증명 | 모든 매장 통합 누적 연장근무 30시간 이상 (다중 매장 경력 합산. 달성 시 한 번만 발급) | 누적 연장 시간 | ✅ 반복 가능 |
 
 ### SBT 레벨 승급 요건(초안)
 
@@ -285,7 +329,7 @@
 
 | 레벨 | 승급 요건 |
 |------|---------|
-| 🛡️ **Lv.1 (Beginner)** | 가입 및 첫 출근 시 자동 부여 |
+| 🛡️ **Lv.1 (Beginner)** | 가입 완료 즉시 자동 부여 (SIWE + 추가 정보 입력 완료 직후, 첫 출근 불필요) |
 | **Lv.2** | `EAS_EXP_TIME` ≥ 1개 |
 | **Lv.3** | `EAS_EXP_TIME` ≥ 2개 |
 | ⚔️ **Lv.4 (Intermediate)** | `EAS_EXP_TIME` ≥ 3개 (2개 이상 업종) + `EAS_FAITH_ATT` ≥ 3개 + `EAS_SCHED_RELI` ≥ 2개 |
@@ -300,13 +344,24 @@
 
 ```json
 {
-  "name": "[F&B] Expert Lv.7 — 한양커피",
-  "description": "F&B 업종에서 7년 근무, 6개월 무지각 기록",
-  "image": "ipfs://QmXxxx...",
+  "name": "Expert Lv.7",
+  // level 기반으로 B-2가 문자열 생성 (레벨명 + 레벨 번호) — 범용 사용 위해 업종·매장명 제외
+
+  "description": "총 7년 경력 (F&B 2년, 유통·물류 2년, 서비스 3년), 6개월 무지각 기록",
+  // 자동 생성 문자열 (업종별 경력 기간 합산 + 성실성 요약) — 복수 업종 경험 반영
+
+  "image": "https://<project>.supabase.co/storage/v1/object/public/badge-images/level-7.png",
+  // 레벨별 뱃지 이미지 URL — B-2가 Supabase Storage에 업로드
+
+  "external_url": "https://alba-sbt.app/portfolio?wallet=0x...",
+  // 알바생 포트폴리오 조회 URL (선택)
+
   "attributes": [
-    { "trait_type": "업종", "value": "F&B" },
-    { "trait_type": "경력 년수", "value": "7" },
-    { "trait_type": "레벨", "value": "7" }
+    { "trait_type": "F&B 경력",      "value": "2년" },      // attendance + stores.category 집계 (경력 있는 업종만 동적 포함)
+    { "trait_type": "유통·물류 경력", "value": "2년" },       // attendance + stores.category 집계
+    { "trait_type": "서비스 경력",    "value": "3년" },      // attendance + stores.category 집계
+    { "trait_type": "총 경력",        "value": "7년" },      // 모든 업종 경력 누적 (월 단위 환산)
+    { "trait_type": "레벨",           "value": "7" }        // level_up_requests.target_level
   ],
   "evidence": {
     "eas_uids": [
@@ -314,9 +369,11 @@
       "0xDcba5678...",
       "..."
     ],
+    // 승급 판독 시 사용된 EAS UID 목록 — 승급 판독 결과에서 조회
+
     "issuers": {
-      "manager": "0xManager123...",
-      "platform": "0xPlatform456..."
+      "manager":  "0xManager123...",   // users.wallet_address (account_type = 'manager')
+      "platform": "0xPlatform456..."   // PLATFORM_SIGNER_PRIVATE_KEY에서 파생된 public address
     }
   }
 }
@@ -333,10 +390,10 @@
 | **출석** | 예약 출근 시간 ± 허용 범위(예: 10분) 내 clock_in | `attendance.status = 'on_time'` | `EAS_FAITH_ATT` |
 | **지각** | 예약 출근 시간 초과 후 clock_in | `attendance.status = 'late'` | `EAS_FAITH_ATT` |
 | **결근** | 근무 예정일에 clock_in 없음 (자정 기준 판정) | `attendance.status = 'absent'` | `EAS_FAITH_ATT` |
-| **근무 기간** | 특정 매장의 첫 번째 `clock_in` ~ 마지막 `clock_in` 또는 `clock_out` 사이 기간 (월 단위 환산) | `attendance` 테이블에서 집계: `MIN(clock_in)` ~ `MAX(COALESCE(clock_out, clock_in))`, `store_id` 기준 | `EAS_EXP_TIME` |
+| **근무 기간** | 특정 매장의 첫 번째 `clock_in` ~ 마지막 `clock_in` 또는 `clock_out` 사이 기간 (월 단위 환산) | `attendance` 테이블에서 집계: `MIN(clock_in)` ~ `MAX(COALESCE(clock_out, clock_in))`, `store_id` 기준, `type='regular'` 및 `type='extension'` 모두 포함. 매장별 독립 판정 (다중 매장 합산 없음) | `EAS_EXP_TIME` |
 | **업종** | 매장 등록 시 설정 (F&B / 유통·물류 / 서비스 / 기타) | `stores.category` | `EAS_EXP_TIME` |
-| **스케줄 변경 횟수** | 확정된 근무 일정을 근무 당일 N시간 이전에 변경 요청한 횟수 | `schedule_changes` 테이블 COUNT | `EAS_SCHED_RELI` |
-| **연장근무 시간** | 승인된 연장근무 건의 누적 시간 합산 | `attendance` 테이블에서 `type='extension'` 집계: `SUM(extension_hours)`, `store_id` 기준 | `EAS_SUB_SUPPORT` |
+| **스케줄 변경 횟수** | 특정 매장의 확정된 근무 일정을 변경 요청하고 사장님이 승인한 횟수 중 개인 사유(personal)만 집계. 가족사·건강문제(unavoidable)는 제외. 매장별 독립 판정 (다중 매장 합산 없음) | `schedule_changes` 테이블에서 집계: `COUNT(status = 'approved' AND reason_category = 'personal')`, `store_id` 기준 (개인 사유 승인 변경만. unavoidable·pending·rejected는 미포함) | `EAS_SCHED_RELI` |
+| **연장근무 시간** | 승인된 연장근무 건 중 실제 clock_out이 완료된 건의 누적 시간 합산 (모든 매장 통합 누적. 다중 매장 경력 합산) | `attendance` 테이블에서 `type='extension'` 집계: `SUM(extension_hours)` (모든 `staff_assignment`의 연장근무 합산. B-1이 연장 clock_out 완료 시 `attendance(type='extension')` 레코드 자동 INSERT) | `EAS_SUB_SUPPORT` |
 
 ---
 
@@ -360,12 +417,40 @@
 
 ### Step 4️⃣ — Multisig 서명 프로세스
 
-- **사장님 서명 (1/2)**: 가스비 없는 EIP-712 오프체인 서명
-  - 내용: "이 알바생의 승급 데이터가 사실임을 보증합니다"
-  
-- **백엔드 서명 (2/2)**: 서버가 사장님 서명값 + 시스템 서명값 묶음
+#### 1. 승급 조건 충족 감지 — B-2 담당
+- 승급 판독 엔진이 알바생의 EAS 보유 현황을 주기적으로 조회
+- 조건 충족 시 해당 알바생의 `pending_level_up` 상태를 DB에 저장
+- 사장님이 앱의 '승급 승인 탭'을 열 때마다 해당 매장의 pending 리스트를 자동 표시 (푸시 알림 없음)
 
-- 완성된 두 서명을 스마트 컨트랙트로 전송
+#### 2. 사장님 서명 (sig1) — C 담당
+- C가 구현한 '승급 승인 탭'에서 사장님이 **[승인]** 버튼 클릭
+- *다중 매장 알바생의 경우: `staff_assignments.approved_at`이 가장 이른 날짜의 매장(주 매장) 사장님이 sig1 서명. 승급 승인 탭은 해당 주 매장 사장님 앱에만 표시.*
+- B-2로부터 nonce 발급 받은 후, EIP-712 양식으로 MetaMask에 서명 요청
+  - 서명 대상: `{ worker: address, level: uint8, nonce: uint256 }`
+  - nonce는 B-2가 발급, 재사용 방지
+- 사장님이 MetaMask에서 서명 확인 → sig1 (bytes) 생성
+- C가 sig1을 B-2 API로 전송
+  - `POST /approvals/sign` → `{ workerAddress, level, nonce, sig1 }`
+
+#### 3. 플랫폼 서명 (sig2) — B-2 담당
+- B-2 NestJS 서버가 sig1 수신 후 즉시 플랫폼 서명 생성
+- 플랫폼 private key: 환경변수 `PLATFORM_SIGNER_PRIVATE_KEY`에서 로드
+- 동일한 EIP-712 양식(`{ worker, level, nonce }`)으로 플랫폼 서명 생성 (ethers.js)
+- 유효기간 없음 — sig1 수신 즉시 sig2 생성 후 컨트랙트 호출
+
+#### 4. 컨트랙트 호출 — B-2 담당
+- 함수 시그니처 (예시): `approveLevelUp(address worker, uint8 level, uint256 nonce, bytes sig1, bytes sig2, string tokenURI)`
+- `tokenURI`: Supabase Storage에 업로드한 메타데이터 JSON의 공개 URL
+  - 예: `https://<project>.supabase.co/storage/v1/object/public/sbt-metadata/{workerAddress}/{level}.json`
+  - C가 배지 화면에서 SBT를 조회할 때 이 tokenURI를 열어 배지 정보를 표시함
+- 컨트랙트가 `ecrecover`로 sig1 = 사장님 주소, sig2 = 플랫폼 주소 검증
+- 검증 통과 → ERC-5192 SBT 발행 + tokenURI 온체인 저장
+
+#### 5. 실패 처리
+- 서명 검증 실패 또는 컨트랙트 호출 실패 시:
+  - 사장님 화면에 에러 메시지 표시
+  - **[재시도]** 버튼 노출 → 클릭 시 B-2가 새 nonce 발급 → 처음부터 재서명
+  - 기존 sig1은 폐기 (nonce 재발급으로 무효화)
 
 ---
 
@@ -373,13 +458,13 @@
 
 - Solidity 컨트랙트가 `ecrecover`로 두 서명 검증
 - 검증 통과 시 ERC-5192 SBT를 유저 지갑으로 발행
-- SBT 메타데이터(JSON) → IPFS/Supabase Storage 저장 → `tokenURI` 연결
+- SBT 메타데이터(JSON) → Supabase Storage 저장 → `tokenURI` 연결
 
 ---
 
 ### Step 6️⃣ — Portfolio & Verification
 
-- 알바생 앱의 SBT 지갑에서 획득 배지 시각적 표시
+- 알바생 화면의 SBT 지갑에서 획득 배지 시각적 표시
 - 다른 사장님이 알바생의 공유 QR 스캔 → EAS Explorer/Etherscan으로 SBT 뿌리 EAS 데이터 즉시 역추적 가능
 
 ---
@@ -388,43 +473,164 @@
 
 ### 팀 구성 원칙
 
-- **프론트엔드**: A-1 (일반 UI 전담) + C (web3 화면 담당, 컨트랙트와 직접 연결되는 화면)
-- **백엔드**: B-1 (출퇴근·근태·QR·푸시 알림) + B-2 (사용자·매장·승급 판독·Multisig 중계)
-- **블록체인**: C (컨트랙트 + web3 앱 화면 겸직)
+- **프론트엔드**: A (전체 앱 화면 구축 — web3 내부 제외) + C (web3 화면 내부 구현)
+- **백엔드**: B-1 (출퇴근·근태·QR) + B-2 (사용자·매장·승급 판독·Multisig 중계)
+- **블록체인**: C (컨트랙트 + SIWE 인증 로직 전담 + web3 화면 내부 겸직)
 - **PM**: 기획·QA 전담 + EAS 스키마 설계 + EAS 발급 트리거 구현
-
-> **재배치 이유**
-> 1. A-1 단독으로 앱 2개 전부 담당 → A-1(일반 UI) + C(web3 화면) 분담
-> 2. PM 코딩 범위 축소 — EAS 발급 트리거는 유지, 승급 판독 코드는 B-2로 이전
-> 3. 푸시 알림 → B-1 이전 (출퇴근 이벤트 발생 도메인과 동일)
-> 4. 인프라 초기 셋업 담당을 PM으로 명시
 
 ### 역할별 상세
 
-| 역할 | 담당 영역 | 주요 산출물 |
-|------|----------|------------|
-| **PM** | 기획·일정·스프린트 관리 + EAS 스키마 설계 + EAS 발급 트리거 구현 + QA 총괄 + 인프라 초기 셋업 주도 | PRD, 스프린트 계획, EAS 스키마 정의서, Edge Functions 코드(EAS 트리거), E2E 테스트 시나리오, Supabase 초기 설정 |
-| **개발자 A-1** (모바일 FE — 일반 UI) | 알바생 앱 전체 + 사장님 앱 비-web3 화면 | 알바생: 홈(매장 연결·연결 매장 목록), QR 스캔 탭, 근태 관리 탭, 신청 탭 / 사장님: 홈(매장 관리), 인사 관리 탭, 근태 관리 탭, 출퇴근 QR 생성 탭 |
-| **개발자 B-1** (백엔드/근태·QR) | 출퇴근·근태·QR 도메인 DB 설계 + API + 푸시 알림 인프라 | QR 토큰 생성·검증, GPS 검증, clock_in/out, 근태 판정 배치(지각·결근·정상), 스케줄·연장근무 API, Realtime 출근 현황, Expo Push·FCM 발송 서비스 |
-| **개발자 B-2** (백엔드/사용자·블록체인) | 사용자·매장·인사 도메인 DB 설계 + API + 승급 판독 로직 + Multisig 중계 | SIWE 인증, 매장 등록·코드 발급, 직원 관리, 승급 판독 로직, Multisig 서명 수집·전송, SBT 메타데이터 업로드 |
-| **개발자 C** (블록체인 + 모바일 web3) | Solidity 컨트랙트 + MetaMask/WalletConnect 연동 모듈 + web3 화면 구현 | ERC-5192 SBT 컨트랙트, EIP-712+ecrecover Multisig, MetaMask/WalletConnect SDK 모듈, Sepolia 배포 / 앱 화면: 알바생 경력 대시보드(SBT 배지·프로그레스 바·포트폴리오 공유 QR), 사장님 승급 승인 탭, 사장님 지원자 경력 검증 탭, 지갑 연동 공통 화면 |
+#### 🔧 PM (기획·일정·스프린트 관리)
+
+**담당 영역**
+- 기획·일정·스프린트 관리
+- EAS 스키마 설계
+- EAS 발급 트리거 구현
+- EAS 발급 실패 재시도 로직 (Edge Functions 내부, 최대 3회 자동 재시도)
+- 승급 판독 트리거 (EAS 발급 완료 이벤트 → B-2 `/level-check` API 호출, 이벤트 기반)
+- QA 총괄
+- 인프라 초기 셋업 주도
+
+**주요 산출물**
+- PRD, 스프린트 계획
+- EAS 스키마 정의서
+- Edge Functions 코드 (EAS 트리거)
+- E2E 테스트 시나리오
+- Supabase 전체 테이블 생성
+- Supabase 프로젝트 키 팀 공유 (URL·anon key·service role key)
+- 레벨별 뱃지 이미지 준비 (Lv.1~10 컨셉 정의 및 이미지 리소스 제공 → B-2 Storage 업로드용 원본 전달)
+- **EAS 발급 및 DB 저장**: PM Edge Function이 EAS 온체인 발급 완료 후 `service_role` key로 `eas_attestations` 테이블에 직접 INSERT (`status='issued'`). B-2 API를 거치지 않음.
+- **EAS 재시도 로직**: 3회 실패 시 `eas_attestations.status='failed'` 기록. 다음 실행 주기에 `failed` 건 재처리.
+- **승급 판독 트리거**: `eas_attestations` INSERT 완료 직후 PM Edge Function이 HTTP POST → B-2 `/level-check` API 직접 호출 (동기, 메시지 큐·Webhook 불필요). 호출 실패 시 다음 EAS 발급 주기에 재시도.
+
+---
+
+#### 📱 개발자 A (모바일 FE — 전체 화면)
+
+**담당 영역**
+- 통합 앱 전체 화면 구축 + web3 화면 UI 컴포넌트 구현 (C의 훅/서비스 인터페이스 기반)
+
+**주요 산출물**
+- 지갑 연동 UI, 추가 정보 입력 화면
+- **알바생**
+  - 홈: 매장 연결·경력 프로필 화면 구조
+  - QR 스캔 탭, 근태 관리 탭, 신청 탭
+- **사장님**
+  - 홈: 매장 관리·지원자 검증 탭 화면 구조
+  - 인사 관리·근태 관리·출퇴근 QR 생성·승급 승인 탭 화면 구조
+- **web3 화면 UI 컴포넌트** (C가 제공하는 훅·서비스 인터페이스 확정 후 구현)
+  - 알바생 — 경력 대시보드: SBT 배지 그리드, 레벨업 프로그레스 바, 포트폴리오 공유 QR 버튼 UI
+  - 사장님 — 승급 승인 탭: 승급 대기 리스트 UI + [승인] 버튼 (C의 EIP-712 서명 서비스 연동)
+  - 사장님 — 지원자 경력 검증 탭: EAS 리포트 결과 표시 UI (C의 QR 스캔·EAS 조회 서비스 연동)
+
+*주의: web3 화면 3종의 UI 컴포넌트는 A가 구현하되, 데이터 연동(훅·서비스)은 C 담당. C의 인터페이스 명세 전달 후 A가 연결. Phase 3 시작 전 C가 인터페이스 명세를 먼저 확정해야 A 작업이 시작 가능.*
+- **공통 에러·로딩·만료 화면 컴포넌트** (API 오류, 승인 대기 타임아웃, 빈 상태 등)
+- **승급 상태 조회 화면** (알바생 — 승급 신청 후 진행 상태 폴링 표시. B-2 `/level-up/status` API 연동)
+
+---
+
+#### 🔌 개발자 B-1 (백엔드 / 근태·QR)
+
+**담당 영역**
+- 출퇴근·근태·QR API 설계 및 구현
+- 근태 판정 배치 (NestJS 스케줄러, 자정 기준 지각·결근·정상 자동 판정)
+- 만료 QR 토큰 정리 (NestJS 스케줄러, 매 시간 만료 건 삭제)
+- 공통 NestJS 모듈 구현 (`CommonModule` — JWT Auth Guard, CORS, 전역 로깅, 예외 필터)
+- 담당 도메인 DB 변경·확정
+
+**주요 산출물**
+- QR 토큰 생성·검증
+- GPS 검증 로직
+- clock_in/out API
+- **근태 판정 배치 스케줄러** (자정 cron — 당일 미퇴근 건 `attendance.status` 일괄 판정)
+- 스케줄·연장근무 API
+- Realtime 출근 현황
+- **만료 QR 토큰 정리 스케줄러** (매 시간 cron — `qr_tokens` 만료 건 삭제)
+- **`CommonModule`** (`@Global()` 선언. JWT Auth Guard, CORS 설정, Winston 로거, 전역 예외 필터 포함. B-2 모듈에서 별도 import 없이 Auth Guard 사용 가능.)
+
+*협업: PM 초기 테이블 기반으로 개발 중 필요 시 직접 스키마 변경 → 확정본 PM에 공유*
+
+*서버 구조: B-1·B-2는 단일 NestJS 서버를 공유. B-1이 `CommonModule(@Global())`을 구현 → AppModule에서 B-1 모듈 먼저 import 후 B-2 모듈 import. B-2는 Guard 재구현 없이 사용 가능.*
+
+---
+
+#### 📊 개발자 B-2 (백엔드 / 사용자·매장·승급)
+
+**담당 영역**
+- 사용자·매장·인사 API
+- 승급 판독 로직
+- Multisig 중계
+- 뱃지 이미지 Storage 업로드·관리 (디자인 원본은 PM 제공)
+- B-1 `CommonModule` 기반 단일 NestJS 서버 내 도메인 모듈 구현
+- 담당 도메인 DB 변경·확정
+
+**주요 산출물**
+- 사용자 정보 저장 API, 매장 등록·코드 발급, 직원 관리
+- 승급 판독 로직 (레벨별 EAS 조건 검증)
+- Multisig 서명 수집·전송
+  - `PLATFORM_SIGNER_PRIVATE_KEY` 환경변수 로드
+  - ethers.js로 플랫폼 서명 생성
+- 뱃지 이미지 Supabase Storage 업로드 (PM이 준비한 원본 이미지를 레벨별로 업로드 → 고정 URL 확보)
+- SBT 메타데이터 JSON 조립
+  - C가 확정한 tokenURI 스키마 기반으로 DB에서 레벨·업종·EAS UID 조회
+  - 스키마 매핑
+  - Supabase Storage 업로드
+  - tokenURI 획득 → `approveLevelUp` 호출 시 인자로 전달
+- **승급 상태 조회 API** (`/level-up/status` — 알바생 A 화면의 폴링 연동)
+- **승급 판독 API** (`/level-check` — PM Edge Function 트리거 수신 → 레벨 조건 검증 → level_up_requests 생성)
+- **SBT 민팅 완료 DB 업데이트**: `approveLevelUp` 컨트랙트 호출 완료(txHash 수신) 후 B-2가 직접: ① `sbt_tokens` INSERT (token_id·metadata_uri·badge_image_uri·contract_address·transaction_hash·minted_at) ② `level_up_requests.status='minted'` + `minted_at` 업데이트. 처리 완료 후 txHash를 C에게 반환하여 A 화면 업데이트에 사용.
+
+*협업: PM 초기 테이블 기반으로 개발 중 필요 시 직접 스키마 변경 → 확정본 PM에 공유*
+
+---
+
+#### ⛓️ 개발자 C (블록체인 + 인증 + web3)
+
+**담당 영역**
+- Solidity 컨트랙트 설계·배포
+- MetaMask/WalletConnect SDK 통합
+- SIWE 인증 로직 전담
+- SIWE nonce 임시 저장 (Supabase `siwe_nonces` 테이블 CRUD)
+- JWT 공유 명세 제공 (secret key + HS256 알고리즘 — B-1 `CommonModule` 구현의 선행 조건)
+- JWT 만료 정책: 24시간, 만료 시 SIWE 재서명 (리프레시 토큰 없음)
+- Sepolia 재배포 전략 (버그 발견 시 재배포 + 새 주소 팀 공유, 프록시 패턴 불필요)
+- Lv.1 자동 민팅 로직 (SIWE 인증 완료 직후 신규 가입 판별 → 플랫폼 단독 서명으로 Lv.1 SBT 발급. C 인증 흐름 내 처리, B-2 이벤트 불필요)
+- web3 로직 레이어 구현 (Hook/Service 형태, A의 UI와 연결) + SBT tokenURI 스키마 확정
+
+**주요 산출물**
+- ERC-5192 SBT 컨트랙트 (민팅·번닝·전송 불가)
+- EIP-712 + ecrecover Multisig 로직
+- MetaMask/WalletConnect SDK 모듈 캡슐화
+- SIWE 인증 (nonce 발급·서명 검증·JWT 발행)
+- Sepolia 배포 및 배포 정보 공유
+- SBT tokenURI 스키마 확정 (B-2 JSON 조립 기준 제공 — Phase 2 시작 전)
+- web3 로직 레이어 구현 (Hook/Service 형태로 명세 후 A에게 인터페이스 전달 — Phase 3 시작 전)
+  - `useSBTData()` 훅 — 알바생 경력 대시보드용 SBT·EAS 데이터 조회
+  - EIP-712 서명 서비스 — 사장님 승급 승인 탭 서명 흐름
+  - QR 스캔 + EAS 조회 서비스 — 사장님 지원자 경력 검증 탭 데이터 제공
+- **SIWE nonce CRUD** (`siwe_nonces` 테이블 — 발급·검증·만료 후 즉시 삭제)
+- **JWT 공유 명세 문서** (secret, HS256, 만료 24h — B-1에 전달. **Phase 1 시작 전 선행 조건**)
+- **Lv.1 자동 민팅 로직** (SIWE 인증 완료(JWT 발행) 직후 C가 `users` 테이블 신규 가입 여부 확인 → 신규인 경우 플랫폼 단독 서명으로 Lv.1 SBT 자동 발급. B-2와 별도 이벤트 연동 없음. multisig 없음.)
 
 ### 화면별 담당자 요약
 
-| 앱 | 화면·탭 | 담당 |
-|----|--------|------|
-| **알바생** | 홈 — 매장 연결 섹션 | A-1 |
-| **알바생** | 홈 — 경력 프로필 대시보드 (SBT 배지·레벨·공유 QR) | **C** |
-| **알바생** | 매장 랜딩 — QR 스캔 탭 | A-1 |
-| **알바생** | 매장 랜딩 — 근태 관리 탭 | A-1 |
-| **알바생** | 매장 랜딩 — 신청 탭 | A-1 |
-| **사장님** | 홈 — 매장 관리 탭 | A-1 |
-| **사장님** | 홈 — 지원자 경력 검증 탭 (QR 스캔 + EAS 리포트) | **C** |
-| **사장님** | 매장 랜딩 — 인사 관리 탭 | A-1 |
-| **사장님** | 매장 랜딩 — 근태 관리 탭 | A-1 |
-| **사장님** | 매장 랜딩 — 출퇴근 QR 생성 탭 | A-1 |
-| **사장님** | 매장 랜딩 — 승급 승인 탭 (EIP-712 서명 흐름) | **C** |
-| **공통** | 지갑 연동 (MetaMask/WalletConnect 초기 화면) | **C** |
+| 앱 | 화면·탭 | 담당 | 비고 |
+|----|--------|------|------|
+| **공통** | 지갑 연동 UI (MetaMask/WalletConnect 초기 화면) | A | |
+| **공통** | 추가 정보 입력 화면 (신규 가입 — 계정 유형·이름·이메일·전화번호) | A | |
+| **공통** | SIWE 인증 로직 (nonce 발급·서명 검증·JWT 발행) | C | 백엔드 포함 |
+| **공통** | 로그인 후 라우팅 로직 | C | |
+| **통합앱 — 알바생** | 홈 — 매장 연결 섹션 | A | |
+| **통합앱 — 알바생** | 홈 — 경력 프로필 대시보드 (UI 컴포넌트) | A | UI 구현. SBT·EAS 데이터는 C의 `useSBTData()` 훅 연동 |
+| **통합앱 — 알바생** | 매장 랜딩 — QR 스캔 탭 | A | |
+| **통합앱 — 알바생** | 매장 랜딩 — 근태 관리 탭 | A | |
+| **통합앱 — 알바생** | 매장 랜딩 — 신청 탭 | A | |
+| **통합앱 — 사장님** | 홈 — 매장 관리 탭 | A | |
+| **통합앱 — 사장님** | 홈 — 지원자 경력 검증 탭 (UI 컴포넌트) | A | 결과 표시 UI 구현. QR 스캔·EAS 조회는 C의 서비스 연동 |
+| **통합앱 — 사장님** | 매장 랜딩 — 인사 관리 탭 | A | |
+| **통합앱 — 사장님** | 매장 랜딩 — 근태 관리 탭 | A | |
+| **통합앱 — 사장님** | 매장 랜딩 — 출퇴근 QR 생성 탭 | A | |
+| **통합앱 — 사장님** | 매장 랜딩 — 승급 승인 탭 (UI 컴포넌트) | A | 리스트·버튼 UI 구현. EIP-712 서명 흐름은 C의 서명 서비스 연동 |
 
 ---
 
@@ -440,9 +646,9 @@
 | **승급 판독 로직 명세** | PM | 레벨별 조건 정의 (Lv.1~10), 판독 엔진 인터페이스 |
 | **DB 스키마 확정본** | B-1, B-2 | 전체 테이블 구조, 컬럼 명세, 관계도 |
 | **API 명세서** | B-1, B-2 | 전체 엔드포인트, 요청/응답 구조 |
-| **Supabase 프로젝트 접속 정보** | PM (초기 셋업) | URL, anon key, service role key |
+| **Supabase 프로젝트 접속 정보** | PM (초기 셋업) | Schema.md 기반 초기 테이블 생성 완료 후 URL, anon key, service role key 팀 전체 공유 — 이후 테이블 변경·확정은 B-1·B-2가 직접 수행 |
 | **Sepolia 네트워크 설정값** | C | chainId: 11155111, RPC URL |
-| **푸시 알림 이벤트 목록** | B-1 | 승인 요청·승급 알림 등 앱이 수신·처리해야 할 이벤트 종류 및 페이로드 |
+| **JWT 인증 명세** | C | secret key, 알고리즘(HS256), 만료 정책(24h). B-1 `CommonModule` JWT Guard 구현 기준 |
 
 ---
 
@@ -452,15 +658,17 @@
 
 | 방향 | 전달물 | 내용 | 시점 |
 |------|--------|------|------|
-| PM → B-1 | 근태 요구사항 문서 | EAS 트리거 연동 시 필요한 집계 필드 정의 (출석·지각·결근·연장근무 판정 기준) | Phase 1 시작 전 |
-| B-1 → PM | 근태 DB 스키마 확정본 | `attendance`, `schedule_changes` 테이블 구조 (Edge Functions 쿼리 작성에 필요) | Phase 1 완료 후 |
+| PM → B-1 | 근태 요구사항 문서 + 초기 테이블 접속 정보 | EAS 트리거 연동 시 필요한 집계 필드 정의 (출석·지각·결근·연장근무 판정 기준) + Supabase URL·key 공유 | Phase 1 시작 전 |
+| B-1 개발 중 | 담당 도메인 DB 직접 변경 | `attendance`, `schedule_changes` 등 근태 관련 테이블을 개발 필요에 따라 B-1이 직접 수정·확정 | Phase 1 진행 중 수시 |
+| B-1 → PM | 근태 DB 스키마 확정본 | `attendance`, `schedule_changes` 최종 테이블 구조 (Edge Functions 쿼리 작성에 필요) | Phase 1 완료 후 |
 
 #### PM ↔ B-2
 
 | 방향 | 전달물 | 내용 | 시점 |
 |------|--------|------|------|
-| PM → B-2 | 승급 판독 로직 명세 | 레벨별 EAS 조건 정의 (Lv.1~10), 판독 엔진 입출력 인터페이스 | Phase 2 시작 전 |
-| B-2 → PM | 승급 판독 API 명세 | EAS 트리거에서 레벨업 감지 결과를 조회하는 엔드포인트 구조 | Phase 2 완료 후 |
+| PM → B-2 | 승급 판독 로직 명세 + 초기 테이블 접속 정보 | 레벨별 EAS 조건 정의 (Lv.1~10), 판독 엔진 입출력 인터페이스 + Supabase URL·key 공유 | Phase 1 시작 전 |
+| B-2 개발 중 | 담당 도메인 DB 직접 변경 | `users`, `stores`, `store_members` 등 사용자·매장 관련 테이블을 개발 필요에 따라 B-2가 직접 수정·확정 | Phase 1~2 진행 중 수시 |
+| B-2 → PM | 사용자·매장 DB 스키마 확정본 + 승급 판독 API 명세 | 최종 테이블 구조 + EAS 트리거에서 레벨업 감지 결과를 조회하는 엔드포인트 구조 | Phase 2 완료 후 |
 
 #### PM ↔ C
 
@@ -469,16 +677,33 @@
 | PM → C | EAS UID 구조 문서 | EAS attestation 필드 목록, EAS 트리거가 사용하는 uid 체계 | Phase 2 시작 전 |
 | C → PM | 컨트랙트 ABI (EAS 트리거용) | EAS 발급 트리거가 체인에서 SBT 조회 시 필요한 함수 인터페이스 | Sepolia 배포 직후 |
 
-#### C ↔ A-1 (지갑 연동 및 web3 화면)
+#### C ↔ B-1 (JWT 인증)
 
-개발자 C는 스마트 컨트랙트(금고)를 만들고, web3 화면(창구)도 직접 구현합니다.  
-A-1은 C가 제공하는 지갑 연동 모듈을 일반 UI 화면에서 호출하는 방식으로 연계합니다.
+| 방향 | 전달물 | 내용 | 시점 |
+|------|--------|------|------|
+| C → B-1 | **JWT 공유 명세** | secret key, 알고리즘(HS256), 만료 정책(24h). B-1 `CommonModule` Auth Guard 구현의 선행 조건. | **Phase 1 시작 전 (선행 조건)** |
+
+#### B-1 ↔ B-2 (공유 NestJS 서버)
+
+| 방향 | 전달물 | 내용 | 시점 |
+|------|--------|------|------|
+| B-1 → B-2 | CommonModule 사용 방법 안내 | `@Global()` CommonModule이 Auth Guard를 전역 제공하므로 B-2는 Guard를 별도 import 없이 사용. AppModule에서 B-1 모듈 먼저, B-2 모듈 나중에 import하는 순서 확인 | Phase 1 시작 전 |
+| B-1 ↔ B-2 | DB 마이그레이션 파일 번호 합의 | 각자 담당 도메인 테이블 변경(컬럼 추가·수정·삭제) 시 마이그레이션 파일 번호 순서 사전 합의. 충돌 방지를 위해 변경 전 슬랙으로 공유 | Phase 1~2 진행 중 수시 |
+| B-1 ↔ B-2 | 공유 도메인 테이블 변경 알림 | `staff_assignments`, `schedules` 등 두 담당자 모두 참조하는 테이블 변경 시 반드시 상대방에게 먼저 통보 후 수정 | Phase 1~2 진행 중 수시 |
+
+#### C ↔ A (지갑 연동 및 web3 화면)
+
+개발자 C는 스마트 컨트랙트와 web3 로직 레이어(훅·서비스)를 담당하고, A는 UI 컴포넌트를 구현합니다.  
+C가 인터페이스 명세를 먼저 확정(Phase 3 시작 전)하면, A가 해당 훅·서비스를 UI에 연동하는 방식으로 협업합니다.
 
 | 전달물 | 설명 | 연결 대상 | 시점 |
 |--------|------|----------|------|
 | **MetaMask/WalletConnect SDK 모듈** | C가 캡슐화한 지갑 연동 공통 모듈 | A-1이 일반 UI 화면에서 지갑 주소 참조 시 사용 | Phase 2 시작 전 |
 | **WalletConnect Project ID** | 지갑 연동 SDK 설정값 | 앱 전체 환경 설정 | Phase 2 시작 전 |
-| **ABI.json + Contract Address** | 컨트랙트 함수 목록 및 Sepolia 배포 주소 | C가 구현하는 배지 대시보드·승급 승인 화면에서 직접 사용 | Sepolia 배포 직후 |
+| **ABI.json + Contract Address** | 컨트랙트 함수 목록 및 Sepolia 배포 주소 | A가 구현하는 web3 화면 UI에서 C의 훅·서비스를 통해 간접 사용 | Sepolia 배포 직후 |
+| **web3 훅·서비스 인터페이스 명세** | C가 제공하는 훅(`useSBTData` 등)·서비스의 입출력 타입 정의 문서. A가 UI 구현 시 API 계약으로 활용 | A가 web3 화면 UI 컴포넌트 구현 시 | **Phase 3 시작 전 (선행 조건)** |
+
+*`useSBTData()` 훅의 데이터 출처: 온체인 직접 조회. SBT 목록은 ERC-5192 컨트랙트 RPC 호출(`balanceOf`, `tokenURI`), EAS 데이터는 EAS SDK로 온체인 조회(UID 기반). 레벨 진행률은 보유 EAS 수 기반 로컬 계산. **B-2는 SBT/EAS 목록 조회 API를 별도 제공하지 않음.***
 
 **EIP-712 서명 양식 예시**
 
@@ -515,34 +740,31 @@ B-2: 플랫폼 서명 추가 후 C가 만든 컨트랙트 호출
         ↓
 컨트랙트: 두 서명 검증 통과 → SBT 발행
         ↓
-C: 알바생 앱 배지 대시보드에서 ABI로 SBT 조회 → 배지 표시
+C: 알바생 화면 배지 대시보드에서 ABI로 SBT 조회 → 배지 표시
 ```
-
-**E2E 테스트**: Phase 3 진입 시 PM(QA 주도) + C + B-2 공동 서명 플로우 검증
 
 #### C → B-2 (Multisig 서명 인터페이스)
 
 | 전달물 | 내용 | 시점 |
 |--------|------|------|
-| **Multisig 서명 수집 인터페이스 명세** | B-2가 사장님 서명(sig1) + 플랫폼 서명(sig2)을 묶어 컨트랙트에 전달하는 함수 시그니처 | Phase 2 시작 전 |
-| **ecrecover 검증 흐름 문서** | B-2 서버가 플랫폼 서명 추가 후 컨트랙트 호출하는 절차 | Phase 2 시작 전 |
+| **Multisig 서명 수집 인터페이스 명세** | B-2 API 엔드포인트: `POST /approvals/sign` (입력: `workerAddress, level, nonce, sig1` / 출력: `txHash` 또는 에러) — C가 구현 후 B-2에 연동 | Phase 2 시작 전 |
+| **ecrecover 검증 흐름 문서** | 컨트랙트 함수 `approveLevelUp(worker, level, nonce, sig1, sig2)` — C가 ABI 확정 후 B-2에 전달 (B-2는 해당 ABI로 컨트랙트 호출) | Sepolia 배포 직후 |
 
-#### B-1 → A-1
+#### B-1 → A
 
 | 전달물 | 내용 | 시점 |
 |--------|------|------|
 | **근태 API 명세** | QR 토큰 생성·검증, clock_in/out, 스케줄 변경·연장근무 엔드포인트 (요청/응답 구조 포함) | Phase 1 완료 후 |
 | **Realtime 출근 현황 명세** | Supabase Realtime 구독 채널명 및 이벤트 페이로드 구조 | Phase 1 완료 후 |
-| **푸시 알림 이벤트 목록** | 승인 요청·승급 알림 등 A-1이 수신·처리해야 할 이벤트 종류 및 페이로드 | Phase 1 완료 후 |
 
-#### B-2 → A-1
+#### B-2 → A
 
 | 전달물 | 내용 | 시점 |
 |--------|------|------|
 | **인증 API 명세** | SIWE 로그인, 세션 관리 엔드포인트 | Phase 1 완료 후 |
 | **매장 API 명세** | 매장 등록·코드 발급, 직원 관리 엔드포인트 | Phase 1 완료 후 |
 
-#### A-1 → B-1, B-2 (공통)
+#### A → B-1, B-2 (공통)
 
 | 전달물 | 내용 | 시점 |
 |--------|------|------|
@@ -552,136 +774,137 @@ C: 알바생 앱 배지 대시보드에서 ABI로 SBT 조회 → 배지 표시
 
 ## 📅 개발 Phases
 
-### Phase 1 — 백엔드 기반
-
-**범위**: 데이터 수집 + 저장소 구축 + 인프라 초기 셋업
-
-- ✅ Supabase 프로젝트·Docker·CI/CD 초기 설정
-- ✅ QR 출퇴근 시스템 + GPS 검증 (매장 GPS ↔ 스캔 GPS 허용 반경 50m 대조, 불일치 시 거부)
-- ✅ 근태 원장 DB 스키마 (결근, 지각, 스케줄 변경)
-- ✅ 사용자·매장·인사 도메인 DB 스키마 + API
-- ✅ 푸시 알림 인프라 (Expo Push·FCM) 구축
-- ✅ 와이어프레임 작성 (A-1 → B-1·B-2 전달용)
-
-**담당**: PM(인프라 셋업) + A-1(와이어프레임) + B-1 + B-2
-
----
-
-### Phase 2 — 블록체인 연동 (약 6주)
-
-**범위**: EAS 자동 발행 + SBT 발급 시스템
-
-- ✅ DID 지갑 연동 — MetaMask/WalletConnect SDK 모듈 (C)
-- ✅ EAS 온체인 Attestation 발행 — 조건 달성 시 자동, PM이 트리거 구현
-- ✅ SBT 컨트랙트 (ERC-5192: mint/burn only, 양도 불가) (C)
-- ✅ Multisig 서명 로직 (EIP-712 + `ecrecover` 검증) (C)
-- ✅ SBT 메타데이터 JSON → IPFS/Supabase Storage → tokenURI 연결 (B-2)
-- ✅ 승급 판독 로직 (B-2)
-
-**담당**: PM(EAS 트리거) + B-2(승급 판독·메타데이터) + C(컨트랙트·지갑 모듈)
+> **Phase 구성 원칙**
+> - Phase 0에서 모든 팀원의 선행 조건(블로커)을 사전 해소
+> - Phase 1부터 백엔드·블록체인·UI를 **병렬 진행**하여 A의 유휴 시간 제거
+> - web3 UI는 C의 훅·서비스 인터페이스 확정 이후 Phase 3에서 통합
+>
+> | Phase | 핵심 목표 |
+> |-------|-----------|
+> | Phase 0 | 선행 조건 해소 (JWT 명세, EAS 스키마, 와이어프레임) |
+> | Phase 1 | 백엔드 API + 인증 + 일반 UI 병렬 개발 |
+> | Phase 2 | EAS 트리거 + web3 훅·서비스 + API 연동 |
+> | Phase 3 | web3 UI 통합 + QA |
 
 ---
 
-### Phase 3 — 앱 개발 (약 8주)
+### Phase 0 — 사전 준비 
 
-**범위**: 사용자 인터페이스 구현
+**범위**: 팀 전체 블로커 해소 + 인프라 초기 셋업
 
-- ✅ 알바생 앱 일반 UI (A-1)
-- ✅ 사장님 앱 일반 UI (A-1)
-- ✅ web3 화면 — 경력 대시보드·배지·공유 QR·승급 승인·지원자 검증·지갑 연동 (C)
+> 이 Phase는 이후 모든 Phase의 선행 조건을 일괄 해소하기 위한 준비 단계입니다.
+> Phase 0 산출물이 완료되어야 Phase 1이 블로커 없이 시작 가능합니다.
 
-**담당**: A-1(일반 UI) + C(web3 화면) + B-1·B-2(API 연동 지원)
+- ✅ **[C]** JWT 공유 명세 확정·팀 공유 (secret key, HS256, 만료 24h) — B-1 CommonModule Auth Guard 구현의 선행 조건
+- ✅ **[C]** SIWE 인증 흐름 설계 완료 (nonce 발급·서명 검증·JWT 발행 방식 확정)
+- ✅ **[C]** tokenURI 스키마 초안 확정 — B-2 메타데이터 JSON 조립 기준 제공
+- ✅ **[PM]** EAS 스키마 정의서 작성 (EAS_EXP_TIME / EAS_FAITH_ATT / EAS_SCHED_RELI / EAS_SUB_SUPPORT 전체 필드)
+- ✅ **[PM]** Supabase 프로젝트 초기 설정 (Schema.md 기반 전체 테이블 생성 + 팀 키 공유)
+- ✅ **[A]** 와이어프레임 작성 (각 화면의 API 응답 필드 명세 포함 → B-1·B-2 전달용)
+
+**담당**: C(JWT 명세·SIWE 설계·tokenURI 초안) + PM(EAS 스키마·인프라 셋업) + A(와이어프레임)
+
+---
+
+### Phase 1 — 백엔드 + 인증 + UI 병렬 개발 (4~6주)
+
+**범위**: 백엔드 API 구현 + 블록체인 컨트랙트·인증 + 일반 UI 화면 (mock 데이터 기반)
+
+> A는 Phase 0에서 확정된 와이어프레임을 기반으로 **mock 데이터**로 일반 UI를 선행 구현합니다.
+> web3가 불필요한 화면(근태·인사·스케줄 탭)을 이 단계에서 완성하고, Phase 2에서 실 API를 연동합니다.
+
+- ✅ **[B-1]** QR 출퇴근 시스템 + GPS 검증 (매장 GPS ↔ 스캔 GPS 허용 반경 50m 대조, 불일치 시 거부)
+- ✅ **[B-1]** 근태 원장 DB 스키마 + 근태 판정 배치 스케줄러 (결근·지각·정상 자동 판정)
+- ✅ **[B-1]** 스케줄·연장근무 API + CommonModule 구현
+- ✅ **[B-2]** 사용자·매장·인사 도메인 DB 스키마 + API
+- ✅ **[B-2]** 승급 판독 로직 기초 (`/level-check` API 인터페이스)
+- ✅ **[C]** SBT 컨트랙트 (ERC-5192: mint/burn only, 양도 불가) + Sepolia 배포
+- ✅ **[C]** Multisig 로직 (EIP-712 + `ecrecover` 검증)
+- ✅ **[C]** SIWE 인증 구현 완성 (nonce 발급·서명 검증·JWT 발행 + Lv.1 자동 민팅)
+- ✅ **[A]** 알바생 일반 UI 화면 구현 (mock 데이터): QR 스캔 탭, 근태 관리 탭, 신청 탭, 매장 연결 섹션
+- ✅ **[A]** 사장님 일반 UI 화면 구현 (mock 데이터): 인사 관리 탭, 근태 관리 탭, 출퇴근 QR 생성 탭, 매장 관리 탭
+
+**담당**: B-1(근태·QR) + B-2(사용자·매장·승급 기초) + C(컨트랙트·인증) + A(일반 UI mock)
+
+---
+
+### Phase 2 — 연동 + EAS + web3 훅·서비스 (3~4주)
+
+**범위**: EAS 자동 발행 트리거 + A의 mock → 실 API 연동 + C의 web3 훅·서비스 레이어 완성
+
+> A는 Phase 1에서 구현한 mock UI를 Phase 2에서 완성된 B-1·B-2 API에 연동합니다.
+> C는 Phase 3에서 A가 사용할 web3 훅·서비스 인터페이스를 이 단계에서 확정·공유합니다.
+
+- ✅ **[PM]** EAS 발급 트리거 구현 (Supabase Edge Functions: 조건 달성 시 자동 발행)
+- ✅ **[PM]** EAS 발급 실패 재시도 로직 (최대 3회 자동 재시도)
+- ✅ **[PM]** 승급 판독 트리거 (EAS 발급 완료 이벤트 → B-2 `/level-check` 호출)
+- ✅ **[B-2]** 뱃지 이미지 Supabase Storage 업로드 (PM 원본 이미지 수령 후)
+- ✅ **[B-2]** SBT 메타데이터 JSON 조립 → Storage 저장 → tokenURI 연결
+- ✅ **[B-2]** 승급 판독 로직 완성 + Multisig 중계 (`/approvals/sign` API)
+- ✅ **[C]** web3 훅·서비스 레이어 구현 및 인터페이스 명세 A에게 전달 (Phase 3 시작 전 선행 조건)
+  - `useSBTData()` 훅 (알바생 경력 대시보드용)
+  - EIP-712 서명 서비스 (사장님 승급 승인용)
+  - QR 스캔 + EAS 조회 서비스 (사장님 지원자 검증용)
+- ✅ **[A]** Phase 1 mock UI → B-1·B-2 실 API 연동 (출퇴근, 근태, 인사, 매장 관리 등)
+- ✅ **[A]** 지갑 연동 UI + 추가 정보 입력 화면 + 로그인 라우팅 (C 모듈 연동)
+
+**담당**: PM(EAS 트리거) + B-2(뱃지·메타데이터·Multisig 완성) + C(web3 훅·서비스) + A(API 연동)
+
+---
+
+### Phase 3 — web3 UI 통합 + QA (3~4주)
+
+**범위**: C의 훅·서비스 기반 web3 UI 컴포넌트 구현 + 전체 E2E 검증
+
+> C가 Phase 2에서 확정한 인터페이스 명세를 기반으로 A가 web3 UI 컴포넌트를 구현합니다.
+
+- ✅ **[A]** 알바생 경력 프로필 대시보드 (SBT 배지 그리드, 레벨업 프로그레스 바, 포트폴리오 공유 QR) — `useSBTData()` 연동
+- ✅ **[A]** 사장님 승급 승인 탭 (승급 대기 리스트 UI + [승인] 버튼) — EIP-712 서명 서비스 연동
+- ✅ **[A]** 사장님 지원자 경력 검증 탭 (EAS 리포트 결과 표시 UI) — QR 스캔·EAS 조회 서비스 연동
+- ✅ **[A]** 승급 상태 조회 화면 (알바생 — 승급 신청 후 진행 상태 폴링)
+- ✅ **[C]** web3 화면 인터페이스 지원 + 버그 수정
+- ✅ **[전체]** E2E 테스트 + QA 총괄
+
+**담당**: A(web3 UI 컴포넌트) + C(지원·버그수정) + B-1·B-2(API 수정 지원) + PM(QA)
 
 ---
 
 ## 📊 검증 계획
 
-### Phase 1 검증 (백엔드 완료 후)
+### Phase 0 검증
+- ✅ C의 JWT 명세 문서 팀 공유 완료 확인
+- ✅ Supabase 프로젝트 접속 정보 팀 전체 공유 완료 확인
+- ✅ A의 와이어프레임 B-1·B-2 전달 완료 확인
+
+### Phase 1 검증 (백엔드 + 인증 완료 후)
 - ✅ QR 출퇴근 시나리오 E2E 테스트
   - GPS mocking으로 매장 좌표 시뮬레이션
   - GPS 불일치 시 출퇴근 거부 확인
-
-### Phase 2 검증 (블록체인 완료 후)
+- ✅ SIWE 인증 흐름 테스트 (nonce 발급 → 서명 → JWT 발행)
 - ✅ Sepolia 배포 후 SBT mint/burn 트랜잭션 검증
+- ✅ A의 mock UI 화면 전체 렌더링 확인
+
+### Phase 2 검증 (EAS + web3 훅 완료 후)
 - ✅ EAS Attestation 온체인 조회 (EAS Explorer)
 - ✅ Multisig 서명 프로세스 E2E (EIP-712 + ecrecover)
 - ✅ SBT 메타데이터 JSON 저장 및 tokenURI 연결 확인
+- ✅ A의 실 API 연동 화면 전체 동작 확인
 
 ### Phase 3 검증 (앱 완료 후)
 - ✅ **Full E2E 시나리오 테스트**:
-  1. 알바생이 첫 출근 (Lv.1 자동 부여)
+  1. 가입 완료 시 Lv.1 자동 부여 (첫 출근 불필요)
   2. 6개월 경과 후 EAS_EXP_TIME 자동 발행
   3. 승급 조건 충족 → 승급 판독 감지
   4. 사장님이 승인 → Multisig 완료
-  5. SBT 발급 → 알바생 앱에 배지 표시
+  5. SBT 발급 → 알바생 화면에 배지 표시
   6. 다른 사장님이 포트폴리오 QR 스캔 → 경력 검증 가능
 
----
-
-## 📝 제약사항 & 주의사항
-
-### 기술 제약
-- Phase 1에서는 블록체인 기능 미포함 (Phase 2에서 구현)
-- GPS 검증은 위도/경도 반경 기반 (더 정교한 지오펜싱은 추후)
-
-### 데이터 제약
-- EAS 자동 발행은 조건(6개월, 횟수 등)에 기반
-- 조건 미달성 시 EAS 발행 불가 (소급 발행 불가)
-- SBT는 일반적 NFT처럼 양도 불가 (ERC-5192 특성)
-
-### 운영 제약
-- Sepolia는 테스트넷 (향후 메인넷 마이그레이션 필요)
-- MetaMask 기반 운영 (다른 지갑은 향후 추가)
-
----
 
 ## 🚀 향후 확장 로드맵 (Phase 4+)
 
+- 🔜 **뱃지 이미지 및 메타데이터 분산 저장 (IPFS 마이그레이션)** (Supabase Storage → IPFS로 전환하여 검열 저항성 강화)
 - 🔜 **업종별 특화 EAS** (F&B → 제조 횟수, 유통·물류 → 배달 횟수, 서비스 → 응대 평점 등 업종에 맞는 숙련도 증명 모듈 개발)
 - 🔜 **메인넷 마이그레이션** (Ethereum 또는 L2)
 - 🔜 **실명 인증 (KYC)** 추가
 - 🔜 **EAS 리보크 프로세스** (사장님이 증명 취소 가능)
 - 🔜 **이의제기 시스템** (알바생이 승급 거부에 이의 신청 가능, 플랫폼 중재)
-
----
-
-## 🔍 주요 논의사항
-
-### EAS_SVC_COUNT (서비스 숙련도 증명) 보류
-
-**원래 의도**
-- 결제/제조 횟수를 통해 "얼마나 숙련했는가"를 객관적으로 입증
-- POS 시뮬레이터에서 알바생이 처리한 거래 자동 카운팅
-
-**현재 문제점**
-
-1. **업종별 데이터 다양성**
-   - F&B: 음료 제조 횟수, 주문 처리 건수
-   - 유통·물류: 배달 횟수, 하역량
-   - 서비스: 고객 응대 횟수, 상담 시간
-   - → 동일한 기준으로 숙련도를 비교하기 어려움
-
-2. **객관적 수치 측정 불가**
-   - 서비스 파트(안내 데스크, 고객 상담): 정량화 불가능
-   - POS 기반 카운팅이 실제 숙련도를 반영하지 못할 수 있음
-
-3. **UX 부담**
-   - 알바생이 매 결제/제조마다 POS에 자신의 정보 등록
-   - 실제 현장에서 번거롭고 오류 가능성 높음
-
-**현재 상태**
-- Phase 1(백엔드) 개발 범위에서 제외
-- 4개 EAS (경력, 성실성, 신뢰성, 협력도)로 핵심 가치 충분히 제공
-- 향후 업종별 특화 EAS 개발 시 재도입 예정
-
-**향후 재도입 전략**
-- 업종별로 "숙련도"의 정의를 명확히 (예: "F&B 제조 숙련도" vs "유통 배달 숙련도")
-- 각 업종에 맞는 EAS 설계 (EAS_BARISTA_SKILL, EAS_DELIVERY_COUNT 등)
-- UX 개선: 자동 카운팅 또는 사장님이 한 번에 월 실적 입력
-- Phase 4에서 본격 개발
-
-**필요한 팀 논의**
-- "숙련도 없이 신뢰성만으로도 충분한가?" → **결론: 충분함**
-  - 사장님 관점: "일을 많이 했는가"보다 "확실히 올 사람인가"가 더 중요
-  - 신뢰·성실성으로 "믿을 수 있는 사람" 입증 가능
-  - 양적 숙련도는 나중에 추가해도 됨
