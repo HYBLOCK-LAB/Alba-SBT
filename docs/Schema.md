@@ -23,28 +23,11 @@ Alba-SBT 시스템의 필수 테이블을 **앱 흐름 순서**대로 정렬.
 | `email` | VARCHAR (UNIQUE, NULLABLE) | 이메일 주소 |
 | `phone` | VARCHAR (NULLABLE) | 휴대폰 번호 |
 | `wallet_address` | VARCHAR (UNIQUE) | 지갑 주소 (MetaMask 연동, SIWE 인증 기준) |
-| `did` | VARCHAR (NULLABLE) | DID (Decentralized Identifier) |
 | `created_at` | TIMESTAMP | 가입 일시 |
 | `updated_at` | TIMESTAMP | 최종 수정 일시 |
 
 **파트**: 앱 — 공통  
-**참고**: SIWE(Sign-In with Ethereum) 기반 인증으로 password_hash 불필요
-
----
-
-### `push_tokens` — 푸시 알림 디바이스 토큰
-| 컬럼 | 타입 | 설명 |
-|------|------|------|
-| `id` | UUID | 기본 키 |
-| `user_id` | UUID (FK) | 사용자 ID (`users.id`) |
-| `token` | VARCHAR | Expo Push Token 또는 FCM Token |
-| `platform` | ENUM('ios', 'android') | 플랫폼 구분 |
-| `is_active` | BOOLEAN | 활성 여부 |
-| `created_at` | TIMESTAMP | 등록 일시 |
-| `updated_at` | TIMESTAMP | 수정 일시 |
-
-**파트**: 앱 — 공통  
-**참고**: 승인 요청·승급 알림 등 Expo Push/FCM 발송 시 참조
+**참고**: SIWE(Sign-In with Ethereum) 기반 인증으로 password_hash 불필요. 신규 가입 시 계정 유형 선택 화면에서 `account_type` 저장. 이후 변경 불가.
 
 ---
 
@@ -57,8 +40,8 @@ Alba-SBT 시스템의 필수 테이블을 **앱 흐름 순서**대로 정렬.
 | `manager_id` | UUID (FK) | 사장님 ID (`users.id`) |
 | `name` | VARCHAR | 매장명 |
 | `store_code` | VARCHAR(6) (UNIQUE) | 6자리 자동 생성 매장코드 (알바생 등록 시 입력) |
-| `category` | ENUM('food', 'retail', 'service', 'other') | 업종 대분류 (EAS_EXP_TIME에 사용) |
-| `sub_category` | VARCHAR (NULLABLE) | 하위 업종 (예: 카페, 편의점, 패스트푸드) |
+| `category` | ENUM('fnb', 'retail', 'production', 'service', 'culture', 'office', 'education') | 업종 대분류 (EAS_EXP_TIME에 사용) |
+| `sub_category` | VARCHAR | 하위 업종 (예: 카페, 편의점, 패스트푸드) — EAS 발급 시 필수 |
 | `address` | VARCHAR | 매장 주소 |
 | `latitude` | DECIMAL(10, 8) | 위도 (GPS 검증용) |
 | `longitude` | DECIMAL(11, 8) | 경도 (GPS 검증용) |
@@ -71,6 +54,8 @@ Alba-SBT 시스템의 필수 테이블을 **앱 흐름 순서**대로 정렬.
 | `updated_at` | TIMESTAMP | 수정 일시 |
 
 **파트**: 앱 — 매장 관리
+
+**참고**: 지갑 연동 후 매장 추가 정보 입력 시 `category`(대분류) + `sub_category`(소분류) **모두 필수 입력**. EAS(`EAS_EXP_TIME`) 발행 데이터에 업종 정보가 포함되므로 누락 불가.
 
 ---
 
@@ -98,8 +83,6 @@ Alba-SBT 시스템의 필수 테이블을 **앱 흐름 순서**대로 정렬.
 | `user_id` | UUID (FK) | 알바생 ID (`users.id`) |
 | `store_id` | UUID (FK) | 매장 ID (`stores.id`) |
 | `staff_number` | VARCHAR (UNIQUE) | 사번 (매장별 출퇴근 QR 활성화 기준) |
-| `hire_date` | DATE | 입사일 |
-| `status` | ENUM('pending', 'active', 'inactive') | 근무 상태 |
 | `approved_at` | TIMESTAMP (NULLABLE) | 사장님 승인 일시 |
 | `created_at` | TIMESTAMP | 배정 일시 |
 | `updated_at` | TIMESTAMP | 수정 일시 |
@@ -231,6 +214,24 @@ Alba-SBT 시스템의 필수 테이블을 **앱 흐름 순서**대로 정렬.
 
 ---
 
+### `badge_images` — SBT 뱃지 이미지 관리
+| 컬럼 | 타입 | 설명 |
+|------|------|------|
+| `id` | UUID | 기본 키 |
+| `level` | INT | SBT 레벨 (1~10) |
+| `image_uri` | VARCHAR (UNIQUE) | 뱃지 이미지 Supabase Storage URL (고정) |
+| `image_filename` | VARCHAR | 이미지 파일명 (예: level-7.png) |
+| `category` | VARCHAR (NULLABLE) | 업종별 구분 (향후 확장용, 현재는 NULL) |
+| `description` | TEXT (NULLABLE) | 뱃지 설명 |
+| `created_at` | TIMESTAMP | 등록 일시 |
+| `updated_at` | TIMESTAMP | 수정 일시 |
+
+**파트**: 블록체인 — 뱃지 메타데이터  
+**담당**: B-2 (뱃지 이미지 디자인 및 Supabase Storage 업로드)  
+**참고**: 각 레벨별로 1개 레코드 생성 (Lv.1~10). 이미지는 B-2가 준비 → Supabase Storage에 업로드 → `image_uri` 저장. `sbt_tokens`에서는 `level`을 기준으로 JOIN하여 `badge_image_uri` 획득.
+
+---
+
 ### `sbt_tokens` — 발급된 SBT 토큰 정보
 | 컬럼 | 타입 | 설명 |
 |------|------|------|
@@ -238,13 +239,15 @@ Alba-SBT 시스템의 필수 테이블을 **앱 흐름 순서**대로 정렬.
 | `user_id` | UUID (FK) | 사용자 ID (`users.id`) |
 | `token_id` | VARCHAR (UNIQUE) | SBT 토큰 ID (스마트 컨트랙트 tokenId) |
 | `level` | INT | 발급 레벨 (1~10) |
-| `metadata_uri` | VARCHAR | SBT 메타데이터 JSON URI (IPFS 또는 Supabase) |
+| `metadata_uri` | VARCHAR | SBT 메타데이터 JSON URI (Supabase Storage) |
+| `badge_image_uri` | VARCHAR | 뱃지 이미지 URI (Supabase Storage, 레벨별 고정 URL) |
 | `contract_address` | VARCHAR | SBT 컨트랙트 주소 (Sepolia) |
 | `transaction_hash` | VARCHAR | 민팅 트랜잭션 해시 |
 | `minted_at` | TIMESTAMP | 민팅 일시 |
 | `created_at` | TIMESTAMP | 기록 생성 일시 |
 
-**파트**: 블록체인 — SBT 토큰
+**파트**: 블록체인 — SBT 토큰  
+**참고**: B-2가 뱃지 이미지를 사전에 준비하여 Supabase Storage에 업로드 → 레벨별로 고정 URL 할당 (예: `.../badge-images/level-7.png`)
 
 ---
 
@@ -252,7 +255,6 @@ Alba-SBT 시스템의 필수 테이블을 **앱 흐름 순서**대로 정렬.
 
 ```
 users (1) ──→ staff_assignments (N) ──→ stores (1)
-users (1) ──→ push_tokens (N)
 
 staff_assignments (1) ──→ schedules (N)
                     ──→ attendance (N)
@@ -263,7 +265,7 @@ stores (1) ──→ qr_tokens (N)
 
 users (1) ──→ eas_attestations (N)
         ──→ level_up_requests (N)
-        ──→ sbt_tokens (N)
+        ──→ sbt_tokens (N) ──→ badge_images (1) (level 기준 JOIN)
 ```
 
 ---
