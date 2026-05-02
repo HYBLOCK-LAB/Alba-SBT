@@ -281,7 +281,6 @@
 │  │  Supabase (PostgreSQL)                  │                   │
 │  │  ├─ attendance (출퇴근 로그)               │                   │
 │  │  ├─ schedule_changes (스케줄 변경 요청)     │                   │
-│  │  ├─ substitute_requests (대타 지원 요청)    │                   │
 │  │  └─ users (지갑 주소 매핑)                 │                    
 │  │  └─ ...                                 │
 │  └─────────────────────────────────────────┘                   │

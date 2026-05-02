@@ -1,6 +1,6 @@
 # Alba-SBT Database Schema
 
-**최종 수정**: 2026-04-29  
+**최종 수정**: 2026-05-02  
 **상태**: Phase 1 스키마 확정 (POS 제외)
 
 ---
@@ -9,6 +9,8 @@
 
 Alba-SBT 시스템의 필수 테이블을 **앱 흐름 순서**대로 정렬.  
 각 테이블은 해당 파트와 용도를 명시합니다.
+
+**타임존 정책**: 모든 `TIMESTAMP` 컬럼은 **KST(UTC+9)** 기준으로 저장. 결근 판정 자정 기준, EAS 기간 계산(6개월·90일) 모두 KST 기준 적용.
 
 ---
 
@@ -67,6 +69,7 @@ Alba-SBT 시스템의 필수 테이블을 **앱 흐름 순서**대로 정렬.
 | `contact` | VARCHAR (NULLABLE) | 연락처 |
 | `created_at` | TIMESTAMP | 등록 일시 |
 | `updated_at` | TIMESTAMP | 수정 일시 |
+| `deleted_at` | TIMESTAMP (NULLABLE) | 삭제(폐업) 일시 — soft delete, NULL이면 활성 매장 |
 
 **파트**: 앱 — 매장 관리
 
@@ -85,7 +88,7 @@ Alba-SBT 시스템의 필수 테이블을 **앱 흐름 순서**대로 정렬.
 | `created_at` | TIMESTAMP | 생성 일시 |
 
 **파트**: 앱 — 매장 관리  
-**참고**: 사장님이 [QR 생성] 버튼 클릭 시 생성 → 30초 유효 → 자동 소멸. 알바생 출퇴근 스캔 시 `attendance.qr_scanned`와 대조 검증
+**참고**: 사장님이 [QR 생성] 버튼 클릭 시 생성 → 30초 유효 → 자동 소멸. 알바생 출근 스캔 시 `attendance.clock_in_qr_scanned`, 퇴근 스캔 시 `attendance.clock_out_qr_scanned`와 대조 검증
 
 ---
 
@@ -97,14 +100,13 @@ Alba-SBT 시스템의 필수 테이블을 **앱 흐름 순서**대로 정렬.
 | `id` | UUID | 기본 키 |
 | `user_id` | UUID (FK) | 알바생 ID (`users.id`) |
 | `store_id` | UUID (FK) | 매장 ID (`stores.id`) |
-| `staff_number` | VARCHAR (UNIQUE) | 사번 (매장별 출퇴근 QR 활성화 기준) |
-| `status` | ENUM('pending', 'active') | 배정 상태: 승인 대기 / 활성 |
+| `status` | ENUM('pending', 'active', 'inactive') | 배정 상태: 승인 대기 / 활성 / 비활성(삭제) |
 | `approved_at` | TIMESTAMP (NULLABLE) | 사장님 승인 일시 |
 | `created_at` | TIMESTAMP | 배정 일시 |
 | `updated_at` | TIMESTAMP | 수정 일시 |
 
 **파트**: 앱 — 직원 관리  
-**참고**: 알바생이 `store_code` 입력 → `status='pending'` 생성 → 사장님이 승인하면 `status='active'`로 변경
+**참고**: 알바생이 `store_code` 입력 → `status='pending'` 생성 → 사장님이 승인하면 `status='active'`로 변경. 사장님이 직원 삭제 시 `status='inactive'`로 변경 (soft delete — 과거 근태·EAS 데이터 보존 위해 하드 delete 금지).
 
 ---
 
@@ -115,6 +117,8 @@ Alba-SBT 시스템의 필수 테이블을 **앱 흐름 순서**대로 정렬.
 |------|------|------|
 | `id` | UUID | 기본 키 |
 | `staff_assignment_id` | UUID (FK) | 직원 배정 ID (`staff_assignments.id`) |
+| `store_id` | UUID (FK) | 매장 ID (`stores.id`) — `staff_assignments.store_id` 비정규화 저장 (매장별 스케줄 조회 최적화) |
+| `user_id` | UUID (FK) | 알바생 ID (`users.id`) — `staff_assignments.user_id` 비정규화 저장 (사용자별 스케줄 조회 최적화) |
 | `scheduled_date` | DATE | 근무 예정일 |
 | `scheduled_start_time` | TIME | 예약 출근 시간 |
 | `scheduled_end_time` | TIME | 예약 퇴근 시간 |
@@ -131,16 +135,23 @@ Alba-SBT 시스템의 필수 테이블을 **앱 흐름 순서**대로 정렬.
 |------|------|------|
 | `id` | UUID | 기본 키 |
 | `staff_assignment_id` | UUID (FK) | 직원 배정 ID (`staff_assignments.id`) |
+| `user_id` | UUID (FK) | 알바생 ID (`users.id`) — `staff_assignments.user_id` 비정규화 저장 (EAS_SUB_SUPPORT 집계 등 사용자 기반 쿼리 최적화) |
 | `store_id` | UUID (FK) | 매장 ID (`stores.id`) |
+| `schedule_id` | UUID (FK, NULLABLE) | 연결된 스케줄 ID (`schedules.id`) — `type='regular'`이면 필수, `type='extension'`이면 NULL 허용 |
 | `type` | ENUM('regular', 'extension') | 근무 유형: 정규 또는 연장근무 |
 | `status` | ENUM('on_time', 'late', 'absent') | 근태 상태 (EAS_FAITH_ATT 판정용) |
 | `clock_in_time` | TIMESTAMP | 실제 출근 시간 |
 | `clock_out_time` | TIMESTAMP (NULLABLE) | 실제 퇴근 시간 |
+| `overtime_request_id` | UUID (FK, NULLABLE) | 연결된 연장근무 신청 ID (`overtime_requests.id`) — `type='extension'`이면 필수, `type='regular'`이면 NULL |
 | `extension_hours` | DECIMAL(5, 2) (NULLABLE) | 연장근무 시간 (type='extension'일 때 사용) |
 | `clock_in_latitude` | DECIMAL(10, 8) (NULLABLE) | 출근 스캔 GPS 위도 |
 | `clock_in_longitude` | DECIMAL(11, 8) (NULLABLE) | 출근 스캔 GPS 경도 |
-| `gps_verified` | BOOLEAN | GPS 검증 통과 여부 |
-| `qr_scanned` | VARCHAR (NULLABLE) | 스캔한 QR 토큰값 (`qr_tokens.token`과 대조) |
+| `clock_in_gps_verified` | BOOLEAN | 출근 GPS 검증 통과 여부 |
+| `clock_in_qr_scanned` | VARCHAR (NULLABLE) | 출근 시 스캔한 QR 토큰값 (`qr_tokens.token`과 대조) |
+| `clock_out_latitude` | DECIMAL(10, 8) (NULLABLE) | 퇴근 스캔 GPS 위도 |
+| `clock_out_longitude` | DECIMAL(11, 8) (NULLABLE) | 퇴근 스캔 GPS 경도 |
+| `clock_out_gps_verified` | BOOLEAN (NULLABLE) | 퇴근 GPS 검증 통과 여부 (퇴근 전까지 NULL) |
+| `clock_out_qr_scanned` | VARCHAR (NULLABLE) | 퇴근 시 스캔한 QR 토큰값 (`qr_tokens.token`과 대조) |
 | `created_at` | TIMESTAMP | 기록 생성 일시 |
 
 **파트**: 앱 — 근태  
@@ -158,6 +169,7 @@ Alba-SBT 시스템의 필수 테이블을 **앱 흐름 순서**대로 정렬.
 | `id` | UUID | 기본 키 |
 | `schedule_id` | UUID (FK) | 원래 스케줄 ID (`schedules.id`) |
 | `staff_assignment_id` | UUID (FK) | 요청자 ID (`staff_assignments.id`) |
+| `store_id` | UUID (FK) | 매장 ID (`stores.id`) — `staff_assignments.store_id` 비정규화 저장 (EAS_SCHED_RELI 매장별 집계 최적화) |
 | `requested_at` | TIMESTAMP | 변경 요청 시간 |
 | `scheduled_date` | DATE | 변경 전 근무 예정일 |
 | `new_date` | DATE (NULLABLE) | 변경 요청한 새 날짜 |
@@ -179,14 +191,15 @@ Alba-SBT 시스템의 필수 테이블을 **앱 흐름 순서**대로 정렬.
 |------|------|------|
 | `id` | UUID | 기본 키 |
 | `staff_assignment_id` | UUID (FK) | 요청자 ID (`staff_assignments.id`) |
+| `store_id` | UUID (FK) | 매장 ID (`stores.id`) — `staff_assignments.store_id` 비정규화 저장 (매장별 연장근무 조회 최적화) |
+| `user_id` | UUID (FK) | 알바생 ID (`users.id`) — `staff_assignments.user_id` 비정규화 저장 (사용자별 연장근무 조회 최적화) |
 | `schedule_id` | UUID (FK) | 연장 기준 스케줄 ID (`schedules.id`) |
 | `requested_date` | DATE | 연장근무 예정일 |
 | `extension_hours` | DECIMAL(5, 2) | 요청 연장 시간 |
 | `reason` | TEXT (NULLABLE) | 연장 사유 |
 | `status` | ENUM('pending', 'approved', 'rejected') | 승인 상태 |
-| `requested_at` | TIMESTAMP | 신청 일시 |
 | `responded_at` | TIMESTAMP (NULLABLE) | 사장님 처리 일시 |
-| `created_at` | TIMESTAMP | 생성 일시 |
+| `created_at` | TIMESTAMP | 신청 및 레코드 생성 일시 |
 
 **파트**: 앱 — 스케줄 관리  
 **참고**: 현재 월 + 익월까지 신청 가능. 승인 후 알바생이 실제 연장 clock_out 완료 시 B-1이 `attendance(type='extension')` 레코드 자동 INSERT → `extension_hours` 기록 → EAS_SUB_SUPPORT 집계에 사용
@@ -200,6 +213,7 @@ Alba-SBT 시스템의 필수 테이블을 **앱 흐름 순서**대로 정렬.
 |------|------|------|
 | `id` | UUID | 기본 키 |
 | `user_id` | UUID (FK) | 사용자 ID (`users.id`) |
+| `store_id` | UUID (FK, NULLABLE) | 매장 ID (`stores.id`) — EAS_EXP_TIME·EAS_FAITH_ATT·EAS_SCHED_RELI는 필수, EAS_SUB_SUPPORT는 NULL |
 | `eas_type` | ENUM('EAS_EXP_TIME', 'EAS_FAITH_ATT', 'EAS_SCHED_RELI', 'EAS_SUB_SUPPORT') | EAS 유형 |
 | `eas_uid` | VARCHAR (UNIQUE) | 온체인 EAS UID (Sepolia) |
 | `attestation_data` | JSONB | EAS 타입별 증명 데이터 (상세 구조는 아래 참조) |
@@ -296,6 +310,7 @@ Alba-SBT 시스템의 필수 테이블을 **앱 흐름 순서**대로 정렬.
 | `current_level` | INT | 현재 레벨 (1~10) |
 | `target_level` | INT | 목표 레벨 |
 | `status` | ENUM('pending', 'awaiting_approval', 'multisig_signed', 'minted', 'rejected') | 승급 상태 |
+| `approving_store_id` | UUID (FK, NULLABLE) | sig1 서명한 사장님의 매장 ID (`stores.id`) — 다중 매장 알바생의 경우 주 매장(최초 승인 매장) 기준, sig1 수신 완료 시 B-2가 기록 |
 | `nonce` | BIGINT | EIP-712 서명 재사용 방지 nonce (컨트랙트 on-chain nonce와 동기화) |
 | `manager_signature` | VARCHAR (NULLABLE) | 사장님 EIP-712 서명 |
 | `platform_signature` | VARCHAR (NULLABLE) | 플랫폼 서명 |
@@ -342,7 +357,8 @@ Alba-SBT 시스템의 필수 테이블을 **앱 흐름 순서**대로 정렬.
 | `created_at` | TIMESTAMP | 기록 생성 일시 |
 
 **파트**: 블록체인 — SBT 토큰  
-**참고**: B-2가 뱃지 이미지를 사전에 준비하여 Supabase Storage에 업로드 → 레벨별로 고정 URL 할당 (예: `.../badge-images/level-7.png`)
+**참고**: B-2가 뱃지 이미지를 사전에 준비하여 Supabase Storage에 업로드 → 레벨별로 고정 URL 할당 (예: `.../badge-images/level-7.png`)  
+**설계 의도**: `badge_image_uri`는 `badge_images.image_uri`의 의도적 비정규화(Intentional Denormalization). 민팅 시점의 이미지 URL을 스냅샷으로 보존하여 SBT 발급 이후 `badge_images` 변경(Storage URL 교체 등)과 무관하게 온체인 tokenURI와 일관성을 유지함.
 
 ---
 
