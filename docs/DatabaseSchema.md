@@ -1,6 +1,6 @@
 # Alba-SBT Database Schema
 
-**최종 수정**: 2026-05-02  
+**최종 수정**: 2026-05-04  
 **상태**: Phase 1 스키마 확정 (POS 제외)
 
 ---
@@ -110,6 +110,29 @@ Alba-SBT 시스템의 필수 테이블을 **앱 흐름 순서**대로 정렬.
 
 ---
 
+### `recurring_schedules` — 반복 근무 패턴
+| 컬럼 | 타입 | 설명 |
+|------|------|------|
+| `id` | UUID | 기본 키 |
+| `staff_assignment_id` | UUID (FK) | 직원 배정 ID (`staff_assignments.id`) |
+| `store_id` | UUID (FK) | 매장 ID (`stores.id`) — 비정규화 저장 |
+| `user_id` | UUID (FK) | 알바생 ID (`users.id`) — 비정규화 저장 |
+| `day_of_week` | INT | 근무 요일 (0=일, 1=월, 2=화, 3=수, 4=목, 5=금, 6=토). 복수 요일은 별도 레코드 |
+| `start_time` | TIME | 출근 시간 |
+| `end_time` | TIME | 퇴근 시간 |
+| `effective_from` | DATE | 패턴 적용 시작일 |
+| `is_active` | BOOLEAN | 패턴 활성 여부 (비활성 시 신규 schedules 미생성) |
+| `created_at` | TIMESTAMP | 등록 일시 |
+| `updated_at` | TIMESTAMP | 수정 일시 |
+
+**파트**: 앱 — 직원 배정  
+**참고**:
+- 사장님이 알바생 승인 완료 직후 요일·시간 입력 → 저장 즉시 당월 잔여일 + 익월 `schedules` 레코드 자동 생성
+- 이후 매월 25일 B-1 스케줄러가 미생성 건에 대해 익월 레코드 일괄 생성 (이미 생성된 건 skip)
+- 패턴 수정 시 기존 레코드 `is_active = false` 비활성화 후 신규 레코드 INSERT. 미래 날짜의 `schedules`에만 새 패턴 반영
+
+---
+
 ## 🔷 앱 — 근태 (출퇴근)
 
 ### `schedules` — 예약 근무 일정
@@ -135,15 +158,14 @@ Alba-SBT 시스템의 필수 테이블을 **앱 흐름 순서**대로 정렬.
 |------|------|------|
 | `id` | UUID | 기본 키 |
 | `staff_assignment_id` | UUID (FK) | 직원 배정 ID (`staff_assignments.id`) |
-| `user_id` | UUID (FK) | 알바생 ID (`users.id`) — `staff_assignments.user_id` 비정규화 저장 (EAS_SUB_SUPPORT 집계 등 사용자 기반 쿼리 최적화) |
+| `user_id` | UUID (FK) | 알바생 ID (`users.id`) — 비정규화 저장 (사용자 기반 쿼리 최적화) |
 | `store_id` | UUID (FK) | 매장 ID (`stores.id`) |
-| `schedule_id` | UUID (FK, NULLABLE) | 연결된 스케줄 ID (`schedules.id`) — `type='regular'`이면 필수, `type='extension'`이면 NULL 허용 |
-| `type` | ENUM('regular', 'extension') | 근무 유형: 정규 또는 연장근무 |
+| `schedule_id` | UUID (FK, NULLABLE) | 연결된 스케줄 ID (`schedules.id`) — `type='regular'`이면 필수, `type='extra'`이면 NULL 허용 |
+| `type` | ENUM('regular', 'extra') | 근무 유형: 정규 또는 추가근무 |
 | `status` | ENUM('on_time', 'late', 'absent') | 근태 상태 (EAS_FAITH_ATT 판정용) |
 | `clock_in_time` | TIMESTAMP | 실제 출근 시간 |
 | `clock_out_time` | TIMESTAMP (NULLABLE) | 실제 퇴근 시간 |
-| `overtime_request_id` | UUID (FK, NULLABLE) | 연결된 연장근무 신청 ID (`overtime_requests.id`) — `type='extension'`이면 필수, `type='regular'`이면 NULL |
-| `extension_hours` | DECIMAL(5, 2) (NULLABLE) | 연장근무 시간 (type='extension'일 때 사용) |
+| `extra_work_application_id` | UUID (FK, NULLABLE) | 연결된 추가 근무 신청 ID (`extra_work_applications.id`) — `type='extra'`이면 필수, `type='regular'`이면 NULL |
 | `clock_in_latitude` | DECIMAL(10, 8) (NULLABLE) | 출근 스캔 GPS 위도 |
 | `clock_in_longitude` | DECIMAL(11, 8) (NULLABLE) | 출근 스캔 GPS 경도 |
 | `clock_in_gps_verified` | BOOLEAN | 출근 GPS 검증 통과 여부 |
@@ -157,52 +179,48 @@ Alba-SBT 시스템의 필수 테이블을 **앱 흐름 순서**대로 정렬.
 **파트**: 앱 — 근태  
 **참고**:
 - 근무 기간 집계: `MIN(clock_in_time)` ~ `MAX(clock_out_time)` (store_id 별) → `EAS_EXP_TIME` 발행 조건 판정
-- 연장근무 집계: `SUM(extension_hours)` WHERE `type='extension'` → `EAS_SUB_SUPPORT` 판정 (누적 30시간 이상)
+- 출퇴근 상태: `status` (on_time / late / absent) → `EAS_FAITH_ATT` 판정 (매장별 90일 연속 무지각·무결근)
 
 ---
 
-## 🔷 앱 — 스케줄 변경 & 연장근무
+## 🔷 앱 — 추가 근무
 
-### `schedule_changes` — 스케줄 변경 요청 로그
+### `extra_work_requests` — 사장님 추가 근무 요청
 | 컬럼 | 타입 | 설명 |
 |------|------|------|
 | `id` | UUID | 기본 키 |
-| `schedule_id` | UUID (FK) | 원래 스케줄 ID (`schedules.id`) |
-| `staff_assignment_id` | UUID (FK) | 요청자 ID (`staff_assignments.id`) |
-| `store_id` | UUID (FK) | 매장 ID (`stores.id`) — `staff_assignments.store_id` 비정규화 저장 (EAS_SCHED_RELI 매장별 집계 최적화) |
-| `requested_at` | TIMESTAMP | 변경 요청 시간 |
-| `scheduled_date` | DATE | 변경 전 근무 예정일 |
-| `new_date` | DATE (NULLABLE) | 변경 요청한 새 날짜 |
-| `new_start_time` | TIME (NULLABLE) | 변경 요청한 새 시작 시간 |
-| `new_end_time` | TIME (NULLABLE) | 변경 요청한 새 종료 시간 |
-| `change_hour_threshold` | INT | 변경 기한 (근무 당일 N시간 이전) |
-| `reason` | TEXT (NULLABLE) | 변경 사유 |
-| `reason_category` | ENUM('unavoidable', 'personal') (NULLABLE) | 변경 사유 분류. unavoidable: 가족사, 건강문제 (EAS 판정 제외). personal: 개인 여행, 학교 시험 등 (EAS 판정 포함). |
-| `status` | ENUM('pending', 'approved', 'rejected') | 요청 상태 |
+| `store_id` | UUID (FK) | 매장 ID (`stores.id`) |
+| `manager_id` | UUID (FK) | 요청 생성 사장님 ID (`users.id`) |
+| `requested_date` | DATE | 추가 근무 예정일 (현재 월 + 익월까지) |
+| `requested_start_time` | TIME | 추가 근무 시작 시간 |
+| `requested_end_time` | TIME | 추가 근무 종료 시간 |
+| `created_at` | TIMESTAMP | 등록 일시 |
+| `updated_at` | TIMESTAMP | 수정 일시 |
+
+**파트**: 앱 — 추가 근무  
+**참고**: 사장님이 날짜·시간 입력 후 등록. 현재 월 + 익월까지만 요청 가능. 등록 즉시 해당 매장 알바생의 추가 근무 탭 목록에 표시됨.
+
+---
+
+### `extra_work_applications` — 알바생 신청 및 수락 상태
+| 컬럼 | 타입 | 설명 |
+|------|------|------|
+| `id` | UUID | 기본 키 |
+| `extra_work_request_id` | UUID (FK) | 추가 근무 요청 ID (`extra_work_requests.id`) |
+| `staff_assignment_id` | UUID (FK) | 직원 배정 ID (`staff_assignments.id`) |
+| `user_id` | UUID (FK) | 알바생 ID (`users.id`) — EAS_EXTRA_ACC 집계용 비정규화 저장 |
+| `store_id` | UUID (FK) | 매장 ID (`stores.id`) — 매장별 조회 최적화 비정규화 저장 |
+| `status` | ENUM('pending', 'accepted', 'not_selected') | 신청 상태: 대기 중 / 수락됨 / 미선택 |
+| `applied_at` | TIMESTAMP | 알바생 신청 일시 |
+| `responded_at` | TIMESTAMP (NULLABLE) | 사장님 처리 일시 |
 | `created_at` | TIMESTAMP | 기록 생성 일시 |
 
-**파트**: 앱 — 스케줄 관리  
-**참고**: EAS_SCHED_RELI 판정용. 3개월 동안 개인 사유(personal)로 인한 사장님 승인 변경 0회 조건. 가족사·건강문제(unavoidable)는 EAS 판정 제외.
-
----
-
-### `overtime_requests` — 연장근무 신청
-| 컬럼 | 타입 | 설명 |
-|------|------|------|
-| `id` | UUID | 기본 키 |
-| `staff_assignment_id` | UUID (FK) | 요청자 ID (`staff_assignments.id`) |
-| `store_id` | UUID (FK) | 매장 ID (`stores.id`) — `staff_assignments.store_id` 비정규화 저장 (매장별 연장근무 조회 최적화) |
-| `user_id` | UUID (FK) | 알바생 ID (`users.id`) — `staff_assignments.user_id` 비정규화 저장 (사용자별 연장근무 조회 최적화) |
-| `schedule_id` | UUID (FK) | 연장 기준 스케줄 ID (`schedules.id`) |
-| `requested_date` | DATE | 연장근무 예정일 |
-| `extension_hours` | DECIMAL(5, 2) | 요청 연장 시간 |
-| `reason` | TEXT (NULLABLE) | 연장 사유 |
-| `status` | ENUM('pending', 'approved', 'rejected') | 승인 상태 |
-| `responded_at` | TIMESTAMP (NULLABLE) | 사장님 처리 일시 |
-| `created_at` | TIMESTAMP | 신청 및 레코드 생성 일시 |
-
-**파트**: 앱 — 스케줄 관리  
-**참고**: 현재 월 + 익월까지 신청 가능. 승인 후 알바생이 실제 연장 clock_out 완료 시 B-1이 `attendance(type='extension')` 레코드 자동 INSERT → `extension_hours` 기록 → EAS_SUB_SUPPORT 집계에 사용
+**파트**: 앱 — 추가 근무  
+**참고**:
+- 알바생은 기존 `schedules`와 시간 충돌이 없는 경우에만 신청 가능 (앱 레이어에서 검증, 충돌 시 신청 불가 처리 필수)
+- 한 요청 당 수락은 1명만 가능 (선착순)
+- 수락 완료 시 사장님·알바생 근태 관리 탭 캘린더에 즉시 반영
+- **EAS_EXTRA_ACC 집계 원천**: `COUNT(*) WHERE status = 'accepted'`, `user_id` 기준 (전 매장 합산. 10회 달성마다 1개 발급)
 
 ---
 
@@ -213,8 +231,8 @@ Alba-SBT 시스템의 필수 테이블을 **앱 흐름 순서**대로 정렬.
 |------|------|------|
 | `id` | UUID | 기본 키 |
 | `user_id` | UUID (FK) | 사용자 ID (`users.id`) |
-| `store_id` | UUID (FK, NULLABLE) | 매장 ID (`stores.id`) — EAS_EXP_TIME·EAS_FAITH_ATT·EAS_SCHED_RELI는 필수, EAS_SUB_SUPPORT는 NULL |
-| `eas_type` | ENUM('EAS_EXP_TIME', 'EAS_FAITH_ATT', 'EAS_SCHED_RELI', 'EAS_SUB_SUPPORT') | EAS 유형 |
+| `store_id` | UUID (FK, NULLABLE) | 매장 ID (`stores.id`) — EAS_EXP_TIME·EAS_FAITH_ATT·EAS_WORK_COMP는 필수, EAS_EXTRA_ACC는 NULL |
+| `eas_type` | ENUM('EAS_EXP_TIME', 'EAS_FAITH_ATT', 'EAS_WORK_COMP', 'EAS_EXTRA_ACC') | EAS 유형 |
 | `eas_uid` | VARCHAR (UNIQUE) | 온체인 EAS UID (Sepolia) |
 | `attestation_data` | JSONB | EAS 타입별 증명 데이터 (상세 구조는 아래 참조) |
 | `issued_at` | TIMESTAMP | 발행 일시 |
@@ -252,25 +270,25 @@ Alba-SBT 시스템의 필수 테이블을 **앱 흐름 순서**대로 정렬.
 }
 ```
 
-**EAS_SCHED_RELI** (매장별 독립)
+**EAS_WORK_COMP** (매장별 독립)
 ```json
 {
   "store_id": "uuid",
   "store_name": "스타벅스",
   "category": "F&B",
   "sub_category": "카페",
+  "completed_count": 47,
+  "on_time_count": 47,
   "period_days": 90,
-  "personal_changes_count": 0,
-  "unavoidable_changes_count": 2,
   "start_date": "2026-02-01",
   "end_date": "2026-05-01"
 }
 ```
 
-**EAS_SUB_SUPPORT** (매장 통합 누적)
+**EAS_EXTRA_ACC** (매장 통합 누적)
 ```json
 {
-  "total_hours": 30.5,
+  "total_accepted_count": 10,
   "issued_date": "2026-05-01",
   "stores": [
     {
@@ -278,21 +296,14 @@ Alba-SBT 시스템의 필수 테이블을 **앱 흐름 순서**대로 정렬.
       "store_name": "스타벅스",
       "category": "F&B",
       "sub_category": "커피",
-      "hours": 5.0
+      "accepted_count": 4
     },
     {
       "store_id": "uuid-convenient",
       "store_name": "CU",
       "category": "유통·물류",
       "sub_category": "편의점",
-      "hours": 15.0
-    },
-    {
-      "store_id": "uuid-delivery",
-      "store_name": "배달의민족",
-      "category": "서비스",
-      "sub_category": "배달",
-      "hours": 10.5
+      "accepted_count": 6
     }
   ]
 }
@@ -368,11 +379,16 @@ Alba-SBT 시스템의 필수 테이블을 **앱 흐름 순서**대로 정렬.
 users (1) ──→ staff_assignments (N) ──→ stores (1)
 
 staff_assignments (1) ──→ schedules (N)
-                    ──→ attendance (N)
-                    ──→ schedule_changes (N)
-                    ──→ overtime_requests (N)
+                     ──→ attendance (N)
+                     ──→ recurring_schedules (N)
+                     ──→ extra_work_applications (N)
 
 stores (1) ──→ qr_tokens (N)
+          ──→ extra_work_requests (N)
+
+extra_work_requests (1) ──→ extra_work_applications (N)
+
+extra_work_applications (1) ←── attendance (extra 타입)
 
 users (1) ──→ eas_attestations (N)
         ──→ level_up_requests (N)
@@ -392,11 +408,11 @@ users (1) ──→ eas_attestations (N)
 
 | EAS 유형 | 판정 기준 | 참조 테이블 / 컬럼 |
 |----------|----------|-----------------|
-| `EAS_EXP_TIME` | 매장별 독립 6개월 달성 | `attendance` — `MIN/MAX(clock_in_time)`, `store_id` 기준 독립 판정 (다중 매장 합산 없음. `type='regular'` 및 `type='extension'` 모두 포함) |
-| `EAS_FAITH_ATT` | 매장별 연속 3개월(90일) 무지각·무결근 | `attendance.status` — `store_id`별 연속 90일 무지각·무결근 판정. 위반 발생 시 해당 `store_id` 카운트 리셋 |
-| `EAS_SCHED_RELI` | 매장별 독립으로 3개월 동안 개인 사유(personal) 승인 변경 0회 (가족사·건강문제 unavoidable 제외. 다중 매장 시 매장마다 별도 발급) | `schedule_changes` — `COUNT(status = 'approved' AND reason_category = 'personal')`, `store_id` 기준 (personal 사유 승인만. unavoidable·pending·rejected 제외. 매장별 독립 판정) |
-| `EAS_SUB_SUPPORT` | 모든 매장 통합 누적 연장근무 30시간 이상 (다중 매장 경력 합산. 달성 시 한 번만 발급) | `attendance` — `SUM(extension_hours)` WHERE `type='extension'` (모든 매장 통합 누적) |
+| `EAS_EXP_TIME` | 매장별 독립 6개월 달성 | `attendance` — `MIN/MAX(clock_in_time)`, `store_id` 기준 독립 판정 (다중 매장 합산 없음. `type='regular'` 및 `type='extra'` 모두 포함) |
+| `EAS_FAITH_ATT` | 매장별 90일 구간, 결근 0회 + 지각 2회 이하 | `attendance.status` — `store_id`별 90일 고정 구간 판정. 첫 출근일 기준 구간 시작. 조건 미달 시 새 구간 리셋 (매장별 독립) |
+| `EAS_WORK_COMP` | EAS_FAITH_ATT 조건 충족 전제 + 구간 내 on_time 출근 건에서 조기 퇴근 0회 | `attendance` JOIN `schedules` ON `schedule_id` — `status = 'on_time'` AND `clock_out_time::TIME >= schedules.scheduled_end_time`. `clock_out_time IS NULL`이면 미완수. 매장별 독립 판정 |
+| `EAS_EXTRA_ACC` | 전체 매장 통합 추가 근무 수락 10회 누적마다 1개 발급 (다중 매장 합산) | `extra_work_applications` — `COUNT(*) WHERE status = 'accepted'`, `user_id` 기준 (전 매장 합산. 10회 달성마다 1개 발급) |
 
 ---
 
-**작성 완료**: 2026-04-29
+**작성 완료**: 2026-05-04
