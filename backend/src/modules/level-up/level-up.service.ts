@@ -1,6 +1,6 @@
 import { randomBytes } from 'node:crypto';
 
-import { ConflictException, Injectable } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 
 import { SupabaseService } from '../../infra/supabase/supabase.service.js';
 import { CheckLevelUpDto } from './dto/check-level-up.dto.js';
@@ -15,7 +15,56 @@ type EasAttestation = {
 };
 
 type SbtToken = {
+  id?: string;
+  token_id?: string;
   level: number;
+  metadata_uri?: string;
+  badge_image_uri?: string;
+  contract_address?: string;
+  transaction_hash?: string;
+  minted_at?: string;
+  created_at?: string;
+};
+
+type LevelUpStatus =
+  | 'pending'
+  | 'awaiting_approval'
+  | 'multisig_signed'
+  | 'minted'
+  | 'rejected'
+  | 'failed';
+
+type LevelUpRequestRecord = {
+  id: string;
+  user_id: string;
+  current_level: number;
+  target_level: number;
+  status: LevelUpStatus;
+  nonce: string;
+  used_eas_uids: unknown;
+  requirements_snapshot: unknown;
+  manager_signature: string | null;
+  platform_signature: string | null;
+  sbt_token_id: string | null;
+  requested_at: string;
+  approved_at: string | null;
+  minted_at: string | null;
+  created_at: string;
+};
+
+type BadgeImage = {
+  level: number;
+  image_uri: string;
+  image_filename: string;
+  category: string | null;
+  description: string | null;
+};
+
+type UserRecord = {
+  id: string;
+  account_type: string;
+  name: string;
+  wallet_address: string;
 };
 
 type LevelRequirement = {
@@ -83,18 +132,45 @@ export class LevelUpService {
   constructor(private readonly supabaseService: SupabaseService) {}
 
   async getStatus(userId: string) {
-    const { data, error } = await this.supabaseService
-      .getClient()
-      .from('level_up_requests')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
+    const [requests, currentLevel] = await Promise.all([
+      this.listLevelUpRequestsByUser(userId),
+      this.getCurrentLevel(userId)
+    ]);
+    const badgeImages = await this.listBadgeImagesByLevels(
+      requests.map((request) => request.target_level)
+    );
+    const history = requests.map((request) =>
+      this.toRequestSummary(request, badgeImages.get(request.target_level))
+    );
 
-    if (error) {
-      throw error;
-    }
+    return {
+      userId,
+      currentLevel,
+      activeRequest: history.find((request) => this.isActiveStatus(request.status)) ?? null,
+      latestRequest: history[0] ?? null,
+      history
+    };
+  }
 
-    return data;
+  async getRequestDetail(requestId: string) {
+    const request = await this.getLevelUpRequestById(requestId);
+    const [worker, badgeImage, sbtToken] = await Promise.all([
+      this.getUser(request.user_id),
+      this.getBadgeImageByLevel(request.target_level),
+      this.getSbtTokenByUserAndLevel(request.user_id, request.target_level)
+    ]);
+
+    return {
+      request: this.toRequestDetail(request, badgeImage ?? undefined),
+      worker: {
+        id: worker.id,
+        accountType: worker.account_type,
+        name: worker.name,
+        walletAddress: worker.wallet_address
+      },
+      badgeImage: badgeImage ? this.toBadgeImageResponse(badgeImage) : null,
+      sbtToken: sbtToken ? this.toSbtTokenResponse(sbtToken) : null
+    };
   }
 
   async checkLevelUp(payload: CheckLevelUpDto) {
@@ -214,6 +290,115 @@ export class LevelUpService {
     }
 
     return data;
+  }
+
+  private async listLevelUpRequestsByUser(userId: string) {
+    const { data, error } = await this.supabaseService
+      .getClient()
+      .from('level_up_requests')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      throw error;
+    }
+
+    return (data ?? []) as LevelUpRequestRecord[];
+  }
+
+  private async getLevelUpRequestById(requestId: string) {
+    const { data, error } = await this.supabaseService
+      .getClient()
+      .from('level_up_requests')
+      .select('*')
+      .eq('id', requestId)
+      .maybeSingle();
+
+    if (error) {
+      throw error;
+    }
+
+    if (!data) {
+      throw new NotFoundException(`Level-up request ${requestId} was not found`);
+    }
+
+    return data as LevelUpRequestRecord;
+  }
+
+  private async getUser(userId: string) {
+    const { data, error } = await this.supabaseService
+      .getClient()
+      .from('users')
+      .select('id, account_type, name, wallet_address')
+      .eq('id', userId)
+      .maybeSingle();
+
+    if (error) {
+      throw error;
+    }
+
+    if (!data) {
+      throw new NotFoundException(`User ${userId} was not found`);
+    }
+
+    return data as UserRecord;
+  }
+
+  private async getBadgeImageByLevel(level: number) {
+    const { data, error } = await this.supabaseService
+      .getClient()
+      .from('badge_images')
+      .select('level, image_uri, image_filename, category, description')
+      .eq('level', level)
+      .maybeSingle();
+
+    if (error) {
+      throw error;
+    }
+
+    return data as BadgeImage | null;
+  }
+
+  private async listBadgeImagesByLevels(levels: number[]) {
+    const uniqueLevels = Array.from(new Set(levels));
+    const badgesByLevel = new Map<number, BadgeImage>();
+
+    if (uniqueLevels.length === 0) {
+      return badgesByLevel;
+    }
+
+    const { data, error } = await this.supabaseService
+      .getClient()
+      .from('badge_images')
+      .select('level, image_uri, image_filename, category, description')
+      .in('level', uniqueLevels);
+
+    if (error) {
+      throw error;
+    }
+
+    for (const badge of (data ?? []) as BadgeImage[]) {
+      badgesByLevel.set(badge.level, badge);
+    }
+
+    return badgesByLevel;
+  }
+
+  private async getSbtTokenByUserAndLevel(userId: string, level: number) {
+    const { data, error } = await this.supabaseService
+      .getClient()
+      .from('sbt_tokens')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('level', level)
+      .maybeSingle();
+
+    if (error) {
+      throw error;
+    }
+
+    return data as SbtToken | null;
   }
 
   private evaluateEligibleLevel(issuedEas: EasAttestation[], currentLevel: number) {
@@ -355,5 +540,84 @@ export class LevelUpService {
 
   private generateUint256Nonce() {
     return BigInt(`0x${randomBytes(32).toString('hex')}`).toString(10);
+  }
+
+  private toRequestSummary(request: LevelUpRequestRecord, badgeImage?: BadgeImage) {
+    return {
+      id: request.id,
+      userId: request.user_id,
+      currentLevel: request.current_level,
+      targetLevel: request.target_level,
+      status: request.status,
+      badgeImageUri: badgeImage?.image_uri ?? null,
+      sbtTokenId: request.sbt_token_id,
+      requestedAt: request.requested_at,
+      approvedAt: request.approved_at,
+      mintedAt: request.minted_at,
+      createdAt: request.created_at,
+      nextAction: this.getNextAction(request.status)
+    };
+  }
+
+  private toRequestDetail(request: LevelUpRequestRecord, badgeImage?: BadgeImage) {
+    return {
+      ...this.toRequestSummary(request, badgeImage),
+      nonce: request.nonce,
+      signatures: {
+        manager: request.manager_signature,
+        platform: request.platform_signature
+      },
+      evidence: {
+        easUids: this.getStringArray(request.used_eas_uids),
+        requirementsSnapshot: request.requirements_snapshot
+      }
+    };
+  }
+
+  private toBadgeImageResponse(badgeImage: BadgeImage) {
+    return {
+      level: badgeImage.level,
+      imageUri: badgeImage.image_uri,
+      imageFilename: badgeImage.image_filename,
+      category: badgeImage.category,
+      description: badgeImage.description
+    };
+  }
+
+  private toSbtTokenResponse(sbtToken: SbtToken) {
+    return {
+      id: sbtToken.id,
+      tokenId: sbtToken.token_id,
+      level: sbtToken.level,
+      metadataUri: sbtToken.metadata_uri,
+      badgeImageUri: sbtToken.badge_image_uri,
+      contractAddress: sbtToken.contract_address,
+      transactionHash: sbtToken.transaction_hash,
+      mintedAt: sbtToken.minted_at,
+      createdAt: sbtToken.created_at
+    };
+  }
+
+  private getStringArray(value: unknown) {
+    return Array.isArray(value)
+      ? value.filter((item): item is string => typeof item === 'string')
+      : [];
+  }
+
+  private isActiveStatus(status: LevelUpStatus) {
+    return status === 'pending' || status === 'awaiting_approval' || status === 'multisig_signed';
+  }
+
+  private getNextAction(status: LevelUpStatus) {
+    const actions: Record<LevelUpStatus, string> = {
+      pending: 'manager_approval_required',
+      awaiting_approval: 'manager_approval_required',
+      multisig_signed: 'mint_pending',
+      minted: 'completed',
+      rejected: 'rejected',
+      failed: 'retry_required'
+    };
+
+    return actions[status];
   }
 }

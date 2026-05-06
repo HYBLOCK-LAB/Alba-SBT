@@ -49,9 +49,17 @@ That lets us keep:
 ## Next implementation targets
 
 - add request validation and exception mapping
-- add store-code generation logic
-- add level-check and approval-sign workflows
+- add approval-sign workflow after approval ownership and contract ABI are finalized
 - split read/write DTOs from persistence models
+
+## B-2 level-up read APIs
+
+- `POST /level-check`
+  - Re-evaluates issued EAS counts and creates the next eligible `level_up_requests` row.
+- `GET /level-up/status/:userId`
+  - Returns `currentLevel`, the latest request, the active in-progress request, and request history for worker polling UI.
+- `GET /level-up/requests/:requestId`
+  - Returns request detail, worker wallet info, target badge image info, evidence snapshot, signatures, nonce, and minted SBT token info when available.
 
 ## Remaining design risk
 

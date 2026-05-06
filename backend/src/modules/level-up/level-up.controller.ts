@@ -10,4 +10,9 @@ export class LevelUpController {
   getStatus(@Param('userId') userId: string) {
     return this.levelUpService.getStatus(userId);
   }
+
+  @Get('requests/:requestId')
+  getRequestDetail(@Param('requestId') requestId: string) {
+    return this.levelUpService.getRequestDetail(requestId);
+  }
 }
