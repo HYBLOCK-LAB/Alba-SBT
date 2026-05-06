@@ -62,8 +62,11 @@ begin
       'awaiting_approval',
       'multisig_signed',
       'minted',
-      'rejected'
+      'rejected',
+      'failed'
     );
   end if;
 end
 $$;
+
+alter type public.level_up_status_enum add value if not exists 'failed';
