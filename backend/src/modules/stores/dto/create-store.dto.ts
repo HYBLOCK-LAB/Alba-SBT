@@ -1,7 +1,6 @@
 export class CreateStoreDto {
   managerId!: string;
   name!: string;
-  storeCode!: string;
   category!: 'fnb' | 'retail' | 'production' | 'service' | 'culture' | 'office' | 'education';
   subCategory!: string;
   address!: string;

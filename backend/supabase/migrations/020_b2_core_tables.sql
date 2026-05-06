@@ -30,6 +30,7 @@ create table if not exists public.stores (
   constraint stores_name_not_blank check (btrim(name) <> ''),
   constraint stores_sub_category_not_blank check (btrim(sub_category) <> ''),
   constraint stores_address_not_blank check (btrim(address) <> ''),
+  constraint stores_store_code_numeric_6 check (store_code ~ '^[0-9]{6}$'),
   constraint stores_gps_radius_positive check (gps_radius_meters > 0),
   constraint stores_qr_start_hour_range check (qr_validity_start_hour between 0 and 23),
   constraint stores_qr_end_hour_range check (qr_validity_end_hour between 0 and 23)

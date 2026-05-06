@@ -1,6 +1,7 @@
 create table if not exists public.eas_attestations (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.users(id) on delete restrict,
+  store_id uuid references public.stores(id) on delete restrict,
   eas_type public.eas_type_enum not null,
   eas_uid varchar not null unique,
   attestation_data jsonb not null,
@@ -19,6 +20,8 @@ create table if not exists public.level_up_requests (
   target_level int not null,
   status public.level_up_status_enum not null,
   nonce bigint not null,
+  used_eas_uids jsonb not null default '[]'::jsonb,
+  requirements_snapshot jsonb not null default '{}'::jsonb,
   manager_signature varchar,
   platform_signature varchar,
   sbt_token_id varchar,

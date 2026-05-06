@@ -36,12 +36,15 @@ begin
     create type public.eas_type_enum as enum (
       'EAS_EXP_TIME',
       'EAS_FAITH_ATT',
-      'EAS_SCHED_RELI',
-      'EAS_SUB_SUPPORT'
+      'EAS_WORK_COMP',
+      'EAS_EXTRA_ACC'
     );
   end if;
 end
 $$;
+
+alter type public.eas_type_enum add value if not exists 'EAS_WORK_COMP';
+alter type public.eas_type_enum add value if not exists 'EAS_EXTRA_ACC';
 
 do $$
 begin
