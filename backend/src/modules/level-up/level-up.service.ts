@@ -1,3 +1,5 @@
+import { randomBytes } from 'node:crypto';
+
 import { ConflictException, Injectable } from '@nestjs/common';
 
 import { SupabaseService } from '../../infra/supabase/supabase.service.js';
@@ -156,18 +158,7 @@ export class LevelUpService {
       };
     }
 
-    if (payload.nonce === undefined) {
-      return {
-        userId: payload.userId,
-        currentLevel,
-        nextEligibleLevel: evaluation.nextEligibleLevel,
-        requestCreated: false,
-        reason: 'nonce_required',
-        requirementsSnapshot: evaluation.requirementsSnapshot,
-        usedEasUids: evaluation.usedEasUids
-      };
-    }
-
+    const nonce = this.generateUint256Nonce();
     const { data, error } = await this.supabaseService
       .getClient()
       .from('level_up_requests')
@@ -176,7 +167,7 @@ export class LevelUpService {
         current_level: currentLevel,
         target_level: evaluation.nextEligibleLevel,
         status: 'pending',
-        nonce: payload.nonce,
+        nonce,
         used_eas_uids: evaluation.usedEasUids,
         requirements_snapshot: evaluation.requirementsSnapshot,
         requested_at: new Date().toISOString()
@@ -383,5 +374,9 @@ export class LevelUpService {
     }
 
     return Array.from(selected.values()).map((eas) => eas.eas_uid);
+  }
+
+  private generateUint256Nonce() {
+    return BigInt(`0x${randomBytes(32).toString('hex')}`).toString(10);
   }
 }

@@ -19,7 +19,7 @@ create table if not exists public.level_up_requests (
   current_level int not null,
   target_level int not null,
   status public.level_up_status_enum not null,
-  nonce bigint not null,
+  nonce text not null,
   used_eas_uids jsonb not null default '[]'::jsonb,
   requirements_snapshot jsonb not null default '{}'::jsonb,
   manager_signature varchar,
