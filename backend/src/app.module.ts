@@ -6,6 +6,8 @@ import { UsersModule } from './modules/users/users.module.js';
 import { StoresModule } from './modules/stores/stores.module.js';
 import { StaffAssignmentsModule } from './modules/staff-assignments/staff-assignments.module.js';
 import { LevelUpModule } from './modules/level-up/level-up.module.js';
+import { BadgesModule } from './modules/badges/badges.module.js';
+import { SbtMetadataModule } from './modules/sbt-metadata/sbt-metadata.module.js';
 
 @Module({
   imports: [
@@ -13,7 +15,9 @@ import { LevelUpModule } from './modules/level-up/level-up.module.js';
     UsersModule,
     StoresModule,
     StaffAssignmentsModule,
-    LevelUpModule
+    LevelUpModule,
+    BadgesModule,
+    SbtMetadataModule
   ],
   controllers: [HealthController]
 })
