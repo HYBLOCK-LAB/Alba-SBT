@@ -4,7 +4,6 @@ import { ConflictException, Injectable } from '@nestjs/common';
 
 import { SupabaseService } from '../../infra/supabase/supabase.service.js';
 import { CheckLevelUpDto } from './dto/check-level-up.dto.js';
-import { CreateLevelUpRequestDto } from './dto/create-level-up-request.dto.js';
 
 type EasType = 'EAS_EXP_TIME' | 'EAS_FAITH_ATT' | 'EAS_WORK_COMP' | 'EAS_EXTRA_ACC';
 
@@ -90,28 +89,6 @@ export class LevelUpService {
       .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
-
-    if (error) {
-      throw error;
-    }
-
-    return data;
-  }
-
-  async createRequest(payload: CreateLevelUpRequestDto) {
-    const { data, error } = await this.supabaseService
-      .getClient()
-      .from('level_up_requests')
-      .insert({
-        user_id: payload.userId,
-        current_level: payload.currentLevel,
-        target_level: payload.targetLevel,
-        status: 'pending',
-        nonce: payload.nonce,
-        requested_at: payload.requestedAt ?? new Date().toISOString()
-      })
-      .select('*')
-      .single();
 
     if (error) {
       throw error;
