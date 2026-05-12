@@ -322,7 +322,7 @@ Alba-SBT 시스템의 필수 테이블을 **앱 흐름 순서**대로 정렬.
   | `target_level` | INT | 목표 레벨 |
   | `status` | ENUM('pending', 'awaiting_approval', 'multisig_signed', 'minted', 'rejected', 'failed') | 승급 상태 |
   | `approving_store_id` | UUID (FK, NULLABLE) | sig1 서명한 사장님의 매장 ID (`stores.id`) — 다중 매장 알바생의 경우 주 매장(최초 승인 매장) 기준, sig1 수신 완료 시 B-2가 기록 |
-  | `nonce` |  | worker address별 EIP-712 서명 재사용 방지 nonce (컨트랙트 on-chain nonce와 동기화) |
+  | `nonce` | VARCHAR | worker address별 EIP-712 서명 재사용 방지 nonce (`uint256` 값을 문자열로 저장, 컨트랙트 on-chain nonce와 동기화) |
   | `manager_signature` | VARCHAR (NULLABLE) | 사장님 EIP-712 서명 |
   | `platform_signature` | VARCHAR (NULLABLE) | 플랫폼 서명 |
   | `sbt_token_id` | VARCHAR (NULLABLE) | 발급된 SBT 토큰 ID |
