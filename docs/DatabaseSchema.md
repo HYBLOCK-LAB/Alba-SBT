@@ -1,7 +1,7 @@
 # Alba-SBT Database Schema
 
-**최종 수정**: 2026-05-04  
-**상태**: Phase 1 스키마 확정 (POS 제외)
+**최종 수정**: 2026-05-12  
+**상태**: Phase 2 진행 중 (EAS 트리거 구현)
 
 ---
 
@@ -239,6 +239,7 @@ Alba-SBT 시스템의 필수 테이블을 **앱 흐름 순서**대로 정렬.
 | `transaction_hash` | VARCHAR (NULLABLE) | 블록체인 트랜잭션 해시 |
 | `status` | ENUM('pending', 'issued', 'failed') | EAS 발급 상태 (기본값: 'pending') |
 | `retry_count` | INT (DEFAULT 0) | Edge Function 재시도 횟수 (최대 3회) |
+| `level_check_triggered` | BOOLEAN (DEFAULT false) | B-2 `/level-check` API 호출 완료 여부. false인 issued 건은 다음 Edge Function 주기에 재시도 |
 | `created_at` | TIMESTAMP | 기록 생성 일시 |
 
 #### `attestation_data` 구조 상세 (EAS 타입별)
@@ -263,7 +264,8 @@ Alba-SBT 시스템의 필수 테이블을 **앱 흐름 순서**대로 정렬.
   "store_name": "스타벅스",
   "category": "F&B",
   "sub_category": "카페",
-  "attendance_rate": 100.0,
+  "absent_count": 0,
+  "late_count": 1,
   "period_days": 90,
   "start_date": "2026-02-01",
   "end_date": "2026-05-01"
@@ -296,14 +298,18 @@ Alba-SBT 시스템의 필수 테이블을 **앱 흐름 순서**대로 정렬.
       "store_name": "스타벅스",
       "category": "F&B",
       "sub_category": "커피",
-      "accepted_count": 4
+      "accepted_count": 4,
+      "first_accepted_at": "2026-01-15",
+      "last_accepted_at": "2026-04-20"
     },
     {
       "store_id": "uuid-convenient",
       "store_name": "CU",
       "category": "유통·물류",
       "sub_category": "편의점",
-      "accepted_count": 6
+      "accepted_count": 6,
+      "first_accepted_at": "2026-02-01",
+      "last_accepted_at": "2026-04-28"
     }
   ]
 }
@@ -322,7 +328,7 @@ Alba-SBT 시스템의 필수 테이블을 **앱 흐름 순서**대로 정렬.
 | `target_level` | INT | 목표 레벨 |
 | `status` | ENUM('pending', 'awaiting_approval', 'multisig_signed', 'minted', 'rejected') | 승급 상태 |
 | `approving_store_id` | UUID (FK, NULLABLE) | sig1 서명한 사장님의 매장 ID (`stores.id`) — 다중 매장 알바생의 경우 주 매장(최초 승인 매장) 기준, sig1 수신 완료 시 B-2가 기록 |
-| `nonce` | BIGINT | EIP-712 서명 재사용 방지 nonce (컨트랙트 on-chain nonce와 동기화) |
+| `nonce` | VARCHAR | EIP-712 서명 재사용 방지 nonce (`uint256` 값을 문자열로 저장, 컨트랙트 on-chain nonce와 동기화) |
 | `manager_signature` | VARCHAR (NULLABLE) | 사장님 EIP-712 서명 |
 | `platform_signature` | VARCHAR (NULLABLE) | 플랫폼 서명 |
 | `sbt_token_id` | VARCHAR (NULLABLE) | 발급된 SBT 토큰 ID |
