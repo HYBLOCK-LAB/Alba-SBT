@@ -1,0 +1,23 @@
+{
+  "name": "alba-sbt-contracts",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "forge build",
+    "test": "forge test",
+    "hh:compile": "hardhat compile",
+    "hh:deploy:sepolia": "hardhat run scripts/deploy.ts --network sepolia",
+    "hh:read:sepolia": "hardhat run scripts/read-contract.ts --network sepolia",
+    "hh:set-manager:sepolia": "hardhat run scripts/set-manager.ts --network sepolia"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-ethers": "^3.1.0",
+    "@nomicfoundation/hardhat-verify": "^2.1.0",
+    "@types/node": "^22.15.21",
+    "dotenv": "^16.5.0",
+    "hardhat": "^2.24.3",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3"
+  }
+}

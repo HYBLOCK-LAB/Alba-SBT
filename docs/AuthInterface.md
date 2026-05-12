@@ -13,6 +13,63 @@ This document defines the authentication contract between developer C, developer
 - Refresh token: not used
 - Re-authentication policy: after JWT expiration, the user must sign SIWE again
 
+## JWT Spec
+
+### Purpose
+
+- SIWE is used for wallet-based login proof.
+- JWT is issued after successful SIWE verification.
+- Protected backend APIs use JWT bearer authentication after login.
+
+### Token Format
+
+- token type: JWT
+- signing algorithm: `HS256`
+- auth header: `Authorization: Bearer <token>`
+
+### Expiration Policy
+
+- access token expiration: `24h`
+- refresh token: not used
+- re-authentication: user must perform SIWE again after expiration
+
+### Recommended JWT Payload
+
+```json
+{
+  "sub": "user_uuid",
+  "walletAddress": "0xabc...",
+  "accountType": "worker",
+  "iat": 1778460000,
+  "exp": 1778546400
+}
+```
+
+### Payload Field Meaning
+
+- `sub`: `users.id`
+- `walletAddress`: `users.wallet_address`
+- `accountType`: `worker` or `manager`
+- `iat`: issued-at unix timestamp
+- `exp`: expiration unix timestamp
+
+### AuthGuard Validation Rules
+
+B-1 `CommonModule` auth guard should validate:
+
+- JWT signature validity
+- algorithm is `HS256`
+- token is not expired
+- payload contains `sub`, `walletAddress`, `accountType`
+
+### Request Context Assumption
+
+After successful guard validation, backend modules may assume access to:
+
+- `userId = sub`
+- `walletAddress`
+- `accountType`
+
 ## Source of Truth
 
 - Wallet identity source: `users.wallet_address`
@@ -53,6 +110,10 @@ Expected result:
 
 Client requests a nonce before signing.
 
+### Suggested Endpoint
+
+`POST /auth/siwe/nonce`
+
 Suggested request:
 
 ```json
@@ -70,6 +131,13 @@ Suggested response:
 }
 ```
 
+### Nonce Request Processing
+
+- create a unique nonce string
+- persist nonce to `siwe_nonces`
+- bind nonce to the requested `walletAddress`
+- set `expiresAt = now + 5 minutes`
+
 ### 3. SIWE Message Sign
 
 Client constructs a SIWE message using:
@@ -84,6 +152,20 @@ User signs this message with the connected wallet.
 
 ### 4. Signature Verification
 
+### Suggested Endpoint
+
+`POST /auth/siwe/verify`
+
+Suggested request:
+
+```json
+{
+  "walletAddress": "0xabc...",
+  "message": "SIWE message string",
+  "signature": "0x1234..."
+}
+```
+
 Backend verifies:
 
 - nonce exists
@@ -95,6 +177,24 @@ After successful verification:
 
 - the nonce row must be deleted immediately
 - the session JWT is issued
+
+### Suggested Success Response
+
+```json
+{
+  "token": "jwt-token-string",
+  "walletAddress": "0xabc...",
+  "isNewUser": true,
+  "accountType": "worker"
+}
+```
+
+### Suggested Failure Cases
+
+- nonce not found
+- nonce expired
+- wallet address mismatch
+- invalid signature
 
 ### 5. User Lookup and Signup Branch
 
@@ -212,4 +312,3 @@ Frontend does not need blockchain-level detail for every case, but should distin
 
 - shared NestJS `CommonModule`
 - JWT guard implementation using C's auth contract
-
