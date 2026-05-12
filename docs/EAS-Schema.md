@@ -1,7 +1,7 @@
 # Alba-SBT EAS 스키마 정의
 
-**최종 수정**: 2026-05-11  
-**상태**: 1차 설계 완료
+**최종 수정**: 2026-05-12  
+**상태**: Sepolia 스키마 등록 완료
 
 ---
 
@@ -24,6 +24,9 @@ Ethereum Attestation Service(EAS)에 등록할 각 스키마의 Solidity 타입 
 bytes32 storeId, string storeName, string category, string subCategory, uint32 periodMonths, uint64 startDate, uint64 endDate
 ```
 
+### Schema UID
+`0x942a358710e9e2fe4d3fb93f025470644fc3fe268d12d99e7bd7431d646e3e1b`
+
 ### 발급 조건
 - 동일 매장에서 첫 `clock_in` ~ 최근 `clock_in/clock_out` 기준 **6개월 달성** 시 자동 발급
 - 매장별 독립 판정 (다중 매장 기간 합산 없음)
@@ -43,9 +46,6 @@ bytes32 storeId, string storeName, string category, string subCategory, uint32 p
   "end_date": "2026-05-01"
 }
 ```
-
-### Schema UID
-> 등록 후 기입 예정
 
 ---
 
@@ -86,7 +86,7 @@ bytes32 storeId, string storeName, string category, string subCategory, uint32 a
 | `period_days` | 판정 구간 일수 | 항상 90 |
 
 ### Schema UID
-> 등록 후 기입 예정
+`0x04b99cbf2b80d0c5e6ddf5307db85838d69a3b145c748f6362df3e151fec268f`
 
 ---
 
@@ -128,7 +128,7 @@ bytes32 storeId, string storeName, string category, string subCategory, uint32 c
 | `on_time_count` | 구간 내 on_time 출근 건수 (= `completed_count` 발급 조건 충족 시) |
 
 ### Schema UID
-> 등록 후 기입 예정
+`0x2388c0f8c9a70723e577f437b172a6757abcf6ea7cf96640d0b916c0f5504bdf`
 
 ---
 
@@ -189,7 +189,7 @@ uint32 totalAcceptedCount, uint64 issuedDate, bytes extraStoresData
 > **설계 결정**: 개별 수락 날짜 배열 대신 기간 범위(first/last)를 채택. 채용처는 "언제" 활동했는지 파악 가능하면서 calldata 크기를 고정 유지. 개별 날짜는 `extra_work_applications.responded_at`으로 off-chain DB에 보존됨.
 
 ### Schema UID
-> 등록 후 기입 예정
+`0x591f68f45a40e2652957741139f7bd75f60516e6a66d9a6b672361ecab37b7fd`
 
 ---
 
