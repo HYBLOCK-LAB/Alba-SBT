@@ -1,0 +1,1148 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Worker Screens 2 · Alba-SBT</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;900&family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+    :root {
+      --primary-900: #061e36;
+      --primary-800: #0b3260;
+      --primary-700: #0b4c86;
+      --primary-600: #1160a4;
+      --primary-500: #1a78c8;
+      --primary-400: #4096d8;
+      --primary-300: #74b5e6;
+      --primary-200: #b0d4f1;
+      --primary-100: #dceef9;
+      --primary-50:  #f0f7fd;
+      --gray-900: #111827;
+      --gray-800: #1f2937;
+      --gray-700: #374151;
+      --gray-600: #4b5563;
+      --gray-500: #6b7280;
+      --gray-400: #9ca3af;
+      --gray-300: #d1d5db;
+      --gray-200: #e5e7eb;
+      --gray-100: #f3f4f6;
+      --gray-50:  #f9fafb;
+      --white: #ffffff;
+      --worker-600: #b45309;
+      --worker-400: #f59e0b;
+      --worker-100: #fef3c7;
+      --success-600: #16a34a;
+      --success-100: #dcfce7;
+      --error-500: #ef4444;
+      --font: 'Noto Sans KR', 'Inter', sans-serif;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font);
+      background: #0f172a;
+      min-height: 100vh;
+      padding: 48px 32px;
+    }
+
+    /* ── Page header ── */
+    .page-header {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+    .page-header h1 {
+      font-size: 13px;
+      font-weight: 600;
+      color: rgba(255,255,255,.35);
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .page-header p {
+      font-size: 22px;
+      font-weight: 700;
+      color: rgba(255,255,255,.85);
+    }
+
+    /* ── Screen grid ── */
+    .screens {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 32px;
+      max-width: 1040px;
+      margin: 0 auto;
+    }
+
+    .screen-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+    .screen-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: rgba(255,255,255,.35);
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      text-align: center;
+    }
+    .screen-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: rgba(255,255,255,.7);
+      text-align: center;
+      margin-top: 2px;
+    }
+
+    /* ── Phone frame ── */
+    .phone {
+      width: 300px;
+      background: var(--gray-50);
+      border-radius: 44px;
+      overflow: hidden;
+      box-shadow:
+        0 0 0 8px #1e293b,
+        0 0 0 10px #334155,
+        0 32px 64px rgba(0,0,0,.6);
+      position: relative;
+      flex-shrink: 0;
+    }
+    .phone-inner {
+      height: 620px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Status bar ── */
+    .status-bar {
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      flex-shrink: 0;
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .status-bar.light { background: var(--white); color: var(--gray-800); }
+    .status-icons { display: flex; align-items: center; gap: 5px; }
+
+    /* ── Top bar ── */
+    .top-bar {
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      background: var(--white);
+      flex-shrink: 0;
+    }
+    .top-bar-title { font-size: 15px; font-weight: 700; color: var(--gray-900); }
+
+    /* ── Inner tab bar ── */
+    .inner-tab-bar {
+      display: flex;
+      border-bottom: 1px solid var(--gray-100);
+      flex-shrink: 0;
+      background: var(--white);
+    }
+    .inner-tab {
+      flex: 1;
+      text-align: center;
+      padding: 11px 4px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--gray-400);
+      position: relative;
+      white-space: nowrap;
+    }
+    .inner-tab.active {
+      color: var(--primary-700);
+      font-weight: 700;
+    }
+    .inner-tab.active::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 16%;
+      right: 16%;
+      height: 2px;
+      background: var(--primary-700);
+      border-radius: 2px 2px 0 0;
+    }
+
+    /* ── Screen content ── */
+    .screen-content {
+      flex: 1;
+      background: var(--white);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .screen-scroll {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+    .screen-scroll::-webkit-scrollbar { display: none; }
+
+    /* ── Bottom tab bar ── */
+    .tab-bar {
+      height: 72px;
+      background: var(--white);
+      display: flex;
+      align-items: stretch;
+      border-top: 1px solid var(--gray-100);
+      flex-shrink: 0;
+    }
+    .tab-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      color: var(--gray-400);
+    }
+    .tab-item.active { color: var(--primary-700); }
+    .tab-item span { font-size: 10px; font-weight: 500; }
+
+    /* ── Badge ── */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 20px;
+      background: transparent;
+    }
+    .badge-pending { border: 1px solid var(--gray-300); color: var(--gray-500); }
+    .badge-success { border: 1px solid var(--success-600); color: var(--success-600); }
+    .badge-primary { border: 1px solid var(--primary-400); color: var(--primary-600); }
+    .badge-amber { border: 1px solid var(--worker-400); color: var(--worker-600); }
+
+    /* ── Section header ── */
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 20px 8px;
+    }
+    .section-title { font-size: 14px; font-weight: 700; color: var(--gray-800); }
+
+    /* ════════════════════════════════
+       W-5  근태 관리
+    ════════════════════════════════ */
+
+    /* Summary card */
+    .summary-card {
+      margin: 12px 16px 0;
+      background: var(--white);
+      border-radius: 16px;
+      border: 1px solid var(--gray-100);
+      padding: 14px 16px;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 0;
+      box-shadow: 0 2px 8px rgba(0,0,0,.04);
+    }
+    .summary-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+    }
+    .summary-item + .summary-item {
+      border-left: 1px solid var(--gray-100);
+    }
+    .summary-num {
+      font-size: 22px;
+      font-weight: 800;
+      font-family: 'Inter', sans-serif;
+      color: var(--gray-900);
+      line-height: 1;
+    }
+    .summary-num.primary { color: var(--primary-700); }
+    .summary-num.error { color: var(--error-500); }
+    .summary-label { font-size: 10px; color: var(--gray-400); font-weight: 500; }
+
+    /* Calendar */
+    .cal-wrap {
+      margin: 12px 16px 0;
+      background: var(--white);
+      border-radius: 16px;
+      border: 1px solid var(--gray-100);
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,.04);
+    }
+    .cal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 14px 8px;
+    }
+    .cal-month {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--gray-800);
+    }
+    .cal-nav {
+      display: flex;
+      gap: 4px;
+    }
+    .cal-nav-btn {
+      width: 26px;
+      height: 26px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--gray-400);
+    }
+    .cal-weekdays {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      padding: 0 8px;
+      margin-bottom: 4px;
+    }
+    .cal-weekday {
+      text-align: center;
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--gray-400);
+      padding: 4px 0;
+    }
+    .cal-weekday.sun { color: var(--error-500); }
+    .cal-weekday.sat { color: var(--primary-500); }
+    .cal-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      padding: 0 8px 10px;
+      gap: 2px;
+    }
+    .cal-day {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      padding: 3px 0;
+    }
+    .cal-day-num {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--gray-700);
+      line-height: 1;
+    }
+    .cal-day-num.today {
+      background: var(--primary-700);
+      color: var(--white);
+      font-weight: 700;
+    }
+    .cal-day-num.sun { color: var(--error-500); }
+    .cal-day-num.sat { color: var(--primary-500); }
+    .cal-day-num.empty { color: transparent; }
+    .cal-dot {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .cal-dot.attend { background: var(--primary-300); }
+    .cal-dot.absent { background: var(--error-500); }
+    .cal-dot.none { background: transparent; }
+
+    /* Work status card */
+    .work-status-card {
+      margin: 12px 16px 14px;
+      background: var(--gray-50);
+      border-radius: 16px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .work-status-title { font-size: 12px; font-weight: 600; color: var(--gray-500); }
+    .work-status-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+    }
+    .work-time-item { display: flex; flex-direction: column; gap: 2px; }
+    .work-time-label { font-size: 10px; color: var(--gray-400); }
+    .work-time-val { font-size: 13px; font-weight: 600; color: var(--gray-800); }
+    .remain-time {
+      font-size: 22px;
+      font-weight: 800;
+      font-family: 'Inter', sans-serif;
+      color: var(--primary-700);
+      line-height: 1;
+    }
+    .remain-label { font-size: 10px; color: var(--gray-400); text-align: right; }
+    .work-progress-track {
+      height: 4px;
+      background: var(--gray-200);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    .work-progress-fill {
+      height: 100%;
+      width: 2%;
+      background: linear-gradient(90deg, var(--primary-500), var(--primary-300));
+      border-radius: 99px;
+    }
+
+    /* ════════════════════════════════
+       W-6  추가 근무
+    ════════════════════════════════ */
+    .extra-card {
+      margin: 0 16px 10px;
+      background: var(--white);
+      border-radius: 14px;
+      border: 1px solid var(--gray-100);
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.04);
+    }
+    .extra-card.done {
+      background: var(--gray-50);
+      opacity: .7;
+    }
+    .extra-card-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+    }
+    .extra-date {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--gray-900);
+    }
+    .extra-date.done-text { color: var(--gray-400); font-size: 14px; }
+    .extra-time {
+      font-size: 12px;
+      color: var(--gray-500);
+      margin-top: 2px;
+    }
+    .btn-apply {
+      padding: 8px 14px;
+      border-radius: 10px;
+      border: 1px solid var(--primary-400);
+      background: transparent;
+      color: var(--primary-700);
+      font-family: var(--font);
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .btn-apply:disabled {
+      border-color: var(--gray-200);
+      color: var(--gray-400);
+      cursor: default;
+    }
+    .btn-cancel-text {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--gray-400);
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-family: var(--font);
+      padding: 8px 0;
+      flex-shrink: 0;
+    }
+    .extra-applied-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* divider */
+    .divider { height: 8px; background: var(--gray-50); flex-shrink: 0; }
+
+    /* ════════════════════════════════
+       W-7  포트폴리오 QR
+    ════════════════════════════════ */
+
+    /* Profile hero */
+    .portfolio-hero {
+      background: var(--primary-900);
+      padding: 20px 20px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      flex-shrink: 0;
+    }
+    .portfolio-name {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--white);
+    }
+    .portfolio-level {
+      font-size: 12px;
+      color: var(--primary-300);
+      font-weight: 500;
+      margin-top: 2px;
+    }
+    .portfolio-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 0;
+    }
+    .portfolio-stat {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+    .portfolio-stat + .portfolio-stat {
+      border-left: 1px solid rgba(255,255,255,.1);
+    }
+    .portfolio-stat-num {
+      font-size: 16px;
+      font-weight: 800;
+      font-family: 'Inter', sans-serif;
+      color: var(--white);
+      line-height: 1;
+    }
+    .portfolio-stat-label { font-size: 10px; color: rgba(255,255,255,.45); }
+
+    /* QR card */
+    .qr-card {
+      margin: 14px 16px 0;
+      background: var(--white);
+      border-radius: 18px;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,.08);
+      flex-shrink: 0;
+    }
+    .qr-pattern {
+      width: 140px;
+      height: 140px;
+      position: relative;
+      flex-shrink: 0;
+    }
+    /* QR pattern using CSS */
+    .qr-grid {
+      width: 140px;
+      height: 140px;
+      display: grid;
+      grid-template-columns: repeat(14, 1fr);
+      grid-template-rows: repeat(14, 1fr);
+      gap: 1.5px;
+      padding: 8px;
+      background: var(--white);
+      border-radius: 8px;
+    }
+    .qr-cell { border-radius: 1px; }
+    .qr-cell.b { background: var(--gray-900); }
+    .qr-cell.w { background: transparent; }
+    /* Finder pattern top-left */
+    .qr-finder-tl,
+    .qr-finder-tr,
+    .qr-finder-bl {
+      position: absolute;
+      width: 30px;
+      height: 30px;
+      border: 3px solid var(--gray-900);
+      border-radius: 3px;
+    }
+    .qr-finder-tl { top: 8px; left: 8px; }
+    .qr-finder-tr { top: 8px; right: 8px; }
+    .qr-finder-bl { bottom: 8px; left: 8px; }
+    .qr-finder-inner {
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      background: var(--gray-900);
+      border-radius: 2px;
+    }
+    .qr-logo-wrap {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 28px;
+      height: 28px;
+      background: var(--white);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 1px 4px rgba(0,0,0,.12);
+      z-index: 2;
+    }
+    .qr-meta {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+    .qr-verified {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--primary-600);
+      border: 1px solid var(--primary-300);
+      background: transparent;
+      padding: 4px 10px;
+      border-radius: 20px;
+    }
+    .qr-date {
+      font-size: 11px;
+      color: var(--gray-400);
+    }
+
+    /* Badge list */
+    .badge-list {
+      margin: 12px 16px 14px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .badge-card {
+      background: var(--white);
+      border-radius: 14px;
+      border: 1px solid var(--gray-100);
+      padding: 12px 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.04);
+    }
+    .badge-card.locked { opacity: .45; }
+    .badge-icon-wrap {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .badge-card-name { font-size: 12px; font-weight: 700; color: var(--gray-800); text-align: center; }
+    .badge-card-desc { font-size: 10px; color: var(--gray-400); text-align: center; line-height: 1.4; }
+
+    /* Action buttons */
+    .portfolio-actions {
+      padding: 12px 16px 16px;
+      display: flex;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+    .btn-outline {
+      flex: 1;
+      padding: 12px 10px;
+      border-radius: 12px;
+      border: 1.5px solid var(--gray-200);
+      background: transparent;
+      color: var(--gray-700);
+      font-family: var(--font);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .btn-solid {
+      flex: 1;
+      padding: 12px 10px;
+      border-radius: 12px;
+      border: none;
+      background: var(--primary-700);
+      color: var(--white);
+      font-family: var(--font);
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      box-shadow: 0 4px 14px rgba(11,76,134,.3);
+    }
+  </style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>Alba-SBT · Worker Screens</h1>
+  <p>알바생 화면 2 — 근태 관리 / 추가 근무 / 포트폴리오 QR</p>
+</div>
+
+<div class="screens">
+
+  <!-- ══════════════════════════════════
+       W-5  근태 관리 탭
+  ══════════════════════════════════ -->
+  <div class="screen-wrap">
+    <div class="screen-label">W-5</div>
+    <div class="screen-name">근태 관리</div>
+    <div class="phone">
+      <div class="phone-inner">
+        <!-- Status bar -->
+        <div class="status-bar light">
+          <span style="font-family:'Inter',sans-serif;font-size:12px;font-weight:600;">9:41</span>
+          <div class="status-icons">
+            <svg width="16" height="12" viewBox="0 0 16 12" fill="none"><rect x="0" y="6" width="3" height="6" rx="1" fill="currentColor" opacity=".4"/><rect x="4" y="4" width="3" height="8" rx="1" fill="currentColor" opacity=".6"/><rect x="8" y="2" width="3" height="10" rx="1" fill="currentColor" opacity=".8"/><rect x="12" y="0" width="3" height="12" rx="1" fill="currentColor"/></svg>
+            <svg width="22" height="12" viewBox="0 0 22 12" fill="none"><rect x="0.5" y="0.5" width="18" height="11" rx="3" stroke="currentColor" stroke-opacity=".35"/><rect x="2" y="2" width="14" height="8" rx="2" fill="currentColor"/><path d="M20 4v4a2 2 0 000-4z" fill="currentColor" opacity=".4"/></svg>
+          </div>
+        </div>
+
+        <!-- Top bar -->
+        <div class="top-bar">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--gray-600)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+            <span class="top-bar-title">맥도날드 신촌점</span>
+          </div>
+        </div>
+
+        <!-- Inner tab bar -->
+        <div class="inner-tab-bar">
+          <div class="inner-tab">QR 스캔</div>
+          <div class="inner-tab active">근태 관리</div>
+          <div class="inner-tab">추가 근무</div>
+        </div>
+
+        <!-- Content -->
+        <div class="screen-content">
+          <div class="screen-scroll">
+            <!-- Summary card -->
+            <div class="summary-card">
+              <div class="summary-item">
+                <div class="summary-num primary">18</div>
+                <div class="summary-label">출근일</div>
+              </div>
+              <div class="summary-item">
+                <div class="summary-num" style="color:var(--worker-400);">1</div>
+                <div class="summary-label">지각</div>
+              </div>
+              <div class="summary-item">
+                <div class="summary-num">0</div>
+                <div class="summary-label">결근</div>
+              </div>
+            </div>
+
+            <!-- Calendar -->
+            <div class="cal-wrap">
+              <div class="cal-header">
+                <span class="cal-month">2026년 5월</span>
+                <div class="cal-nav">
+                  <div class="cal-nav-btn">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+                  </div>
+                  <div class="cal-nav-btn">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+                  </div>
+                </div>
+              </div>
+              <div class="cal-weekdays">
+                <div class="cal-weekday sun">일</div>
+                <div class="cal-weekday">월</div>
+                <div class="cal-weekday">화</div>
+                <div class="cal-weekday">수</div>
+                <div class="cal-weekday">목</div>
+                <div class="cal-weekday">금</div>
+                <div class="cal-weekday sat">토</div>
+              </div>
+              <div class="cal-grid">
+                <!-- Week 0: empty start + May 1 (Fri) -->
+                <div class="cal-day"><div class="cal-day-num empty">-</div><div class="cal-dot none"></div></div>
+                <div class="cal-day"><div class="cal-day-num empty">-</div><div class="cal-dot none"></div></div>
+                <div class="cal-day"><div class="cal-day-num empty">-</div><div class="cal-dot none"></div></div>
+                <div class="cal-day"><div class="cal-day-num empty">-</div><div class="cal-dot none"></div></div>
+                <div class="cal-day"><div class="cal-day-num">1</div><div class="cal-dot attend"></div></div>
+                <div class="cal-day"><div class="cal-day-num">2</div><div class="cal-dot attend"></div></div>
+                <div class="cal-day"><div class="cal-day-num sat">3</div><div class="cal-dot none"></div></div>
+                <!-- Week 1 -->
+                <div class="cal-day"><div class="cal-day-num sun">4</div><div class="cal-dot none"></div></div>
+                <div class="cal-day"><div class="cal-day-num">5</div><div class="cal-dot attend"></div></div>
+                <div class="cal-day"><div class="cal-day-num today">6</div><div class="cal-dot none"></div></div>
+                <div class="cal-day"><div class="cal-day-num">7</div><div class="cal-dot none"></div></div>
+                <div class="cal-day"><div class="cal-day-num">8</div><div class="cal-dot none"></div></div>
+                <div class="cal-day"><div class="cal-day-num">9</div><div class="cal-dot none"></div></div>
+                <div class="cal-day"><div class="cal-day-num sat">10</div><div class="cal-dot none"></div></div>
+                <!-- Week 2 -->
+                <div class="cal-day"><div class="cal-day-num sun">11</div><div class="cal-dot none"></div></div>
+                <div class="cal-day"><div class="cal-day-num">12</div><div class="cal-dot attend"></div></div>
+                <div class="cal-day"><div class="cal-day-num">13</div><div class="cal-dot attend"></div></div>
+                <div class="cal-day"><div class="cal-day-num">14</div><div class="cal-dot attend"></div></div>
+                <div class="cal-day"><div class="cal-day-num">15</div><div class="cal-dot absent"></div></div>
+                <div class="cal-day"><div class="cal-day-num">16</div><div class="cal-dot attend"></div></div>
+                <div class="cal-day"><div class="cal-day-num sat">17</div><div class="cal-dot none"></div></div>
+                <!-- Week 3 -->
+                <div class="cal-day"><div class="cal-day-num sun">18</div><div class="cal-dot none"></div></div>
+                <div class="cal-day"><div class="cal-day-num">19</div><div class="cal-dot attend"></div></div>
+                <div class="cal-day"><div class="cal-day-num">20</div><div class="cal-dot attend"></div></div>
+                <div class="cal-day"><div class="cal-day-num">21</div><div class="cal-dot attend"></div></div>
+                <div class="cal-day"><div class="cal-day-num">22</div><div class="cal-dot attend"></div></div>
+                <div class="cal-day"><div class="cal-day-num">23</div><div class="cal-dot attend"></div></div>
+                <div class="cal-day"><div class="cal-day-num sat">24</div><div class="cal-dot none"></div></div>
+                <!-- Week 4 -->
+                <div class="cal-day"><div class="cal-day-num sun">25</div><div class="cal-dot none"></div></div>
+                <div class="cal-day"><div class="cal-day-num">26</div><div class="cal-dot none"></div></div>
+                <div class="cal-day"><div class="cal-day-num">27</div><div class="cal-dot none"></div></div>
+                <div class="cal-day"><div class="cal-day-num">28</div><div class="cal-dot none"></div></div>
+                <div class="cal-day"><div class="cal-day-num">29</div><div class="cal-dot none"></div></div>
+                <div class="cal-day"><div class="cal-day-num">30</div><div class="cal-dot none"></div></div>
+                <div class="cal-day"><div class="cal-day-num sat">31</div><div class="cal-dot none"></div></div>
+              </div>
+            </div>
+
+            <!-- Work status card -->
+            <div class="work-status-card">
+              <div class="work-status-title">오늘 근무 현황</div>
+              <div class="work-status-row">
+                <div class="work-time-item">
+                  <div class="work-time-label">출근</div>
+                  <div class="work-time-val">오전 09:02</div>
+                </div>
+                <div class="work-time-item" style="align-items:flex-end;">
+                  <div class="work-time-label">예약 퇴근</div>
+                  <div class="work-time-val">오후 06:00</div>
+                </div>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:flex-end;">
+                <div>
+                  <div class="remain-label" style="text-align:left;">남은 시간</div>
+                  <div class="remain-time">8시간 58분</div>
+                </div>
+              </div>
+              <div class="work-progress-track">
+                <div class="work-progress-fill"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bottom tab bar -->
+        <div class="tab-bar">
+          <div class="tab-item">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg>
+            <span>홈</span>
+          </div>
+          <div class="tab-item">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            <span>QR 스캔</span>
+          </div>
+          <div class="tab-item active">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+            <span>근태</span>
+          </div>
+          <div class="tab-item">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12h8M12 8v8"/></svg>
+            <span>추가근무</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════
+       W-6  추가 근무 탭
+  ══════════════════════════════════ -->
+  <div class="screen-wrap">
+    <div class="screen-label">W-6</div>
+    <div class="screen-name">추가 근무</div>
+    <div class="phone">
+      <div class="phone-inner">
+        <!-- Status bar -->
+        <div class="status-bar light">
+          <span style="font-family:'Inter',sans-serif;font-size:12px;font-weight:600;">9:41</span>
+          <div class="status-icons">
+            <svg width="16" height="12" viewBox="0 0 16 12" fill="none"><rect x="0" y="6" width="3" height="6" rx="1" fill="currentColor" opacity=".4"/><rect x="4" y="4" width="3" height="8" rx="1" fill="currentColor" opacity=".6"/><rect x="8" y="2" width="3" height="10" rx="1" fill="currentColor" opacity=".8"/><rect x="12" y="0" width="3" height="12" rx="1" fill="currentColor"/></svg>
+            <svg width="22" height="12" viewBox="0 0 22 12" fill="none"><rect x="0.5" y="0.5" width="18" height="11" rx="3" stroke="currentColor" stroke-opacity=".35"/><rect x="2" y="2" width="14" height="8" rx="2" fill="currentColor"/><path d="M20 4v4a2 2 0 000-4z" fill="currentColor" opacity=".4"/></svg>
+          </div>
+        </div>
+
+        <!-- Top bar -->
+        <div class="top-bar">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--gray-600)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+            <span class="top-bar-title">맥도날드 신촌점</span>
+          </div>
+        </div>
+
+        <!-- Inner tab bar -->
+        <div class="inner-tab-bar">
+          <div class="inner-tab">QR 스캔</div>
+          <div class="inner-tab">근태 관리</div>
+          <div class="inner-tab active">추가 근무</div>
+        </div>
+
+        <!-- Content -->
+        <div class="screen-content">
+          <div class="screen-scroll">
+            <div class="section-header">
+              <span class="section-title">신청 가능한 추가 근무</span>
+            </div>
+
+            <!-- Card 1 -->
+            <div class="extra-card">
+              <div class="extra-card-top">
+                <div>
+                  <div class="extra-date">5월 10일 (토)</div>
+                  <div class="extra-time">오전 10:00 – 오후 6:00</div>
+                </div>
+                <button class="btn-apply">신청하기</button>
+              </div>
+            </div>
+
+            <!-- Card 2 -->
+            <div class="extra-card">
+              <div class="extra-card-top">
+                <div>
+                  <div class="extra-date">5월 17일 (토)</div>
+                  <div class="extra-time">오후 2:00 – 오후 8:00</div>
+                </div>
+                <button class="btn-apply">신청하기</button>
+              </div>
+            </div>
+
+            <!-- Card 3 – already applied -->
+            <div class="extra-card">
+              <div class="extra-card-top">
+                <div>
+                  <div class="extra-date">5월 24일 (토)</div>
+                  <div class="extra-time">오전 9:00 – 오후 3:00</div>
+                </div>
+                <span class="badge badge-amber" style="align-self:flex-start;">신청됨</span>
+              </div>
+              <button class="btn-apply" disabled style="width:100%;border-radius:10px;padding:9px;">신청 완료</button>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="section-header">
+              <span class="section-title">신청 완료</span>
+            </div>
+
+            <!-- Done card -->
+            <div class="extra-card done">
+              <div class="extra-applied-row">
+                <div>
+                  <div class="extra-date done-text">5월 24일 (토)</div>
+                  <div class="extra-time">오전 9:00 – 오후 3:00</div>
+                </div>
+                <button class="btn-cancel-text">취소</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bottom tab bar -->
+        <div class="tab-bar">
+          <div class="tab-item">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg>
+            <span>홈</span>
+          </div>
+          <div class="tab-item">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            <span>QR 스캔</span>
+          </div>
+          <div class="tab-item">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+            <span>근태</span>
+          </div>
+          <div class="tab-item active">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12h8M12 8v8"/></svg>
+            <span>추가근무</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════
+       W-7  포트폴리오 QR
+  ══════════════════════════════════ -->
+  <div class="screen-wrap">
+    <div class="screen-label">W-7</div>
+    <div class="screen-name">포트폴리오 QR</div>
+    <div class="phone">
+      <div class="phone-inner">
+        <!-- Status bar -->
+        <div class="status-bar light">
+          <span style="font-family:'Inter',sans-serif;font-size:12px;font-weight:600;">9:41</span>
+          <div class="status-icons">
+            <svg width="16" height="12" viewBox="0 0 16 12" fill="none"><rect x="0" y="6" width="3" height="6" rx="1" fill="currentColor" opacity=".4"/><rect x="4" y="4" width="3" height="8" rx="1" fill="currentColor" opacity=".6"/><rect x="8" y="2" width="3" height="10" rx="1" fill="currentColor" opacity=".8"/><rect x="12" y="0" width="3" height="12" rx="1" fill="currentColor"/></svg>
+            <svg width="22" height="12" viewBox="0 0 22 12" fill="none"><rect x="0.5" y="0.5" width="18" height="11" rx="3" stroke="currentColor" stroke-opacity=".35"/><rect x="2" y="2" width="14" height="8" rx="2" fill="currentColor"/><path d="M20 4v4a2 2 0 000-4z" fill="currentColor" opacity=".4"/></svg>
+          </div>
+        </div>
+
+        <!-- Top bar -->
+        <div class="top-bar">
+          <div class="top-bar-icon-btn" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--gray-600)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </div>
+          <span style="font-size:16px;font-weight:700;color:var(--gray-900);">경력 포트폴리오</span>
+          <div class="top-bar-icon-btn" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--gray-600)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/>
+              <polyline points="16 6 12 2 8 6"/>
+              <line x1="12" y1="2" x2="12" y2="15"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Content -->
+        <div class="screen-content">
+          <div class="screen-scroll">
+            <!-- Profile hero -->
+            <div class="portfolio-hero">
+              <div>
+                <div class="portfolio-name">홍길동</div>
+                <div class="portfolio-level">Lv.2 · 성실 알바생</div>
+              </div>
+              <div class="portfolio-stats">
+                <div class="portfolio-stat">
+                  <div class="portfolio-stat-num">142</div>
+                  <div class="portfolio-stat-label">총 근무일</div>
+                </div>
+                <div class="portfolio-stat">
+                  <div class="portfolio-stat-num">2</div>
+                  <div class="portfolio-stat-label">매장 수</div>
+                </div>
+                <div class="portfolio-stat">
+                  <div class="portfolio-stat-num">2</div>
+                  <div class="portfolio-stat-label">배지 수</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- QR card -->
+            <div class="qr-card">
+              <!-- QR pattern (CSS simulated) -->
+              <div style="position:relative;width:140px;height:140px;">
+                <!-- Finder squares -->
+                <div style="position:absolute;top:6px;left:6px;width:32px;height:32px;border:3.5px solid var(--gray-900);border-radius:4px;"></div>
+                <div style="position:absolute;top:14px;left:14px;width:16px;height:16px;background:var(--gray-900);border-radius:2px;"></div>
+                <div style="position:absolute;top:6px;right:6px;width:32px;height:32px;border:3.5px solid var(--gray-900);border-radius:4px;"></div>
+                <div style="position:absolute;top:14px;right:14px;width:16px;height:16px;background:var(--gray-900);border-radius:2px;"></div>
+                <div style="position:absolute;bottom:6px;left:6px;width:32px;height:32px;border:3.5px solid var(--gray-900);border-radius:4px;"></div>
+                <div style="position:absolute;bottom:14px;left:14px;width:16px;height:16px;background:var(--gray-900);border-radius:2px;"></div>
+                <!-- Data modules (random-looking pattern) -->
+                <div style="position:absolute;top:6px;left:42px;right:6px;bottom:42px;display:grid;grid-template-columns:repeat(7,1fr);grid-template-rows:repeat(7,1fr);gap:1.5px;">
+                  <div style="background:var(--gray-900);"></div><div></div><div style="background:var(--gray-900);"></div><div style="background:var(--gray-900);"></div><div></div><div style="background:var(--gray-900);"></div><div></div>
+                  <div></div><div style="background:var(--gray-900);"></div><div></div><div style="background:var(--gray-900);"></div><div style="background:var(--gray-900);"></div><div></div><div style="background:var(--gray-900);"></div>
+                  <div style="background:var(--gray-900);"></div><div style="background:var(--gray-900);"></div><div></div><div></div><div style="background:var(--gray-900);"></div><div style="background:var(--gray-900);"></div><div></div>
+                  <div></div><div></div><div style="background:var(--gray-900);"></div><div style="background:var(--gray-900);"></div><div></div><div></div><div style="background:var(--gray-900);"></div>
+                  <div style="background:var(--gray-900);"></div><div></div><div style="background:var(--gray-900);"></div><div></div><div style="background:var(--gray-900);"></div><div></div><div style="background:var(--gray-900);"></div>
+                  <div></div><div style="background:var(--gray-900);"></div><div style="background:var(--gray-900);"></div><div></div><div></div><div style="background:var(--gray-900);"></div><div></div>
+                  <div style="background:var(--gray-900);"></div><div></div><div></div><div style="background:var(--gray-900);"></div><div style="background:var(--gray-900);"></div><div></div><div style="background:var(--gray-900);"></div>
+                </div>
+                <div style="position:absolute;top:42px;left:6px;width:32px;bottom:6px;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(7,1fr);gap:1.5px;right:auto;">
+                  <div style="background:var(--gray-900);"></div><div></div><div style="background:var(--gray-900);"></div>
+                  <div></div><div style="background:var(--gray-900);"></div><div></div>
+                  <div style="background:var(--gray-900);"></div><div style="background:var(--gray-900);"></div><div></div>
+                  <div></div><div></div><div style="background:var(--gray-900);"></div>
+                  <div style="background:var(--gray-900);"></div><div></div><div style="background:var(--gray-900);"></div>
+                  <div></div><div style="background:var(--gray-900);"></div><div style="background:var(--gray-900);"></div>
+                  <div style="background:var(--gray-900);"></div><div></div><div></div>
+                </div>
+                <div style="position:absolute;top:42px;right:6px;width:32px;bottom:42px;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);gap:1.5px;">
+                  <div style="background:var(--gray-900);"></div><div></div><div style="background:var(--gray-900);"></div>
+                  <div></div><div style="background:var(--gray-900);"></div><div></div>
+                  <div style="background:var(--gray-900);"></div><div style="background:var(--gray-900);"></div><div></div>
+                </div>
+                <!-- Logo center -->
+                <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:28px;height:28px;background:var(--white);border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 3px var(--white);">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--primary-700)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14l-5-4.87 6.91-1.01L12 2z"/>
+                  </svg>
+                </div>
+              </div>
+
+              <div class="qr-meta">
+                <div class="qr-verified">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                  EAS 온체인 검증됨
+                </div>
+                <div class="qr-date">2026.05.06 생성</div>
+              </div>
+            </div>
+
+            <!-- Badge list -->
+            <div class="section-header" style="padding-top:14px;">
+              <span class="section-title">획득 배지</span>
+            </div>
+            <div class="badge-list">
+              <!-- Badge 1 -->
+              <div class="badge-card">
+                <div class="badge-icon-wrap" style="background:var(--worker-100);">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--worker-600)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="4" width="18" height="18" rx="2"/>
+                    <path d="M16 2v4M8 2v4M3 10h18"/>
+                    <path d="M8 14h.01M12 14h.01M16 14h.01"/>
+                  </svg>
+                </div>
+                <div class="badge-card-name">6개월 근속</div>
+                <div class="badge-card-desc">동일 매장 6개월 연속 근무</div>
+              </div>
+              <!-- Badge 2 -->
+              <div class="badge-card">
+                <div class="badge-icon-wrap" style="background:var(--primary-50);">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--primary-600)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    <path d="M9 12l2 2 4-4"/>
+                  </svg>
+                </div>
+                <div class="badge-card-name">성실 인증</div>
+                <div class="badge-card-desc">지각·결근 0 30일 달성</div>
+              </div>
+              <!-- Badge 3 – locked -->
+              <div class="badge-card locked">
+                <div class="badge-icon-wrap" style="background:var(--gray-100);">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--gray-400)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2"/>
+                    <path d="M7 11V7a5 5 0 0110 0v4"/>
+                  </svg>
+                </div>
+                <div class="badge-card-name">멀티 매장</div>
+                <div class="badge-card-desc">매장 3곳 이상 재직</div>
+              </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="portfolio-actions">
+              <button class="btn-outline">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                이미지 저장
+              </button>
+              <button class="btn-solid">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+                공유하기
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

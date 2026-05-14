@@ -1,0 +1,1460 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Alba-SBT Design System</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;900&family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+    /* ─── CSS Variables ─────────────────────────────────────── */
+    :root {
+      /* Brand */
+      --primary-900: #061e36;
+      --primary-800: #0b3260;
+      --primary-700: #0b4c86;   /* ★ Main Brand */
+      --primary-600: #1160a4;
+      --primary-500: #1a78c8;
+      --primary-400: #4096d8;
+      --primary-300: #74b5e6;
+      --primary-200: #b0d4f1;
+      --primary-100: #dceef9;
+      --primary-50:  #f0f7fd;
+
+      /* Worker accent — warm amber */
+      --worker-600: #b45309;
+      --worker-500: #d97706;
+      --worker-400: #f59e0b;
+      --worker-300: #fcd34d;
+      --worker-100: #fef3c7;
+      --worker-50:  #fffbeb;
+
+      /* Manager accent — teal */
+      --manager-600: #0d7377;
+      --manager-500: #0e9aa7;
+      --manager-400: #14b8a6;
+      --manager-300: #5eead4;
+      --manager-100: #ccfbf1;
+      --manager-50:  #f0fdfa;
+
+      /* Semantic */
+      --success-500: #22c55e;
+      --success-100: #dcfce7;
+      --warning-500: #f59e0b;
+      --warning-100: #fef3c7;
+      --error-500:   #ef4444;
+      --error-100:   #fee2e2;
+      --info-500:    #3b82f6;
+      --info-100:    #dbeafe;
+
+      /* Neutral */
+      --gray-900: #111827;
+      --gray-800: #1f2937;
+      --gray-700: #374151;
+      --gray-600: #4b5563;
+      --gray-500: #6b7280;
+      --gray-400: #9ca3af;
+      --gray-300: #d1d5db;
+      --gray-200: #e5e7eb;
+      --gray-100: #f3f4f6;
+      --gray-50:  #f9fafb;
+      --white:    #ffffff;
+
+      /* Typography */
+      --font-sans: 'Noto Sans KR', 'Inter', sans-serif;
+
+      /* Font sizes */
+      --text-xs:   11px;
+      --text-sm:   13px;
+      --text-base: 15px;
+      --text-md:   17px;
+      --text-lg:   19px;
+      --text-xl:   22px;
+      --text-2xl:  26px;
+      --text-3xl:  32px;
+
+      /* Font weight */
+      --fw-light:    300;
+      --fw-regular:  400;
+      --fw-medium:   500;
+      --fw-semibold: 600;
+      --fw-bold:     700;
+      --fw-black:    900;
+
+      /* Spacing */
+      --sp-1:  4px;
+      --sp-2:  8px;
+      --sp-3:  12px;
+      --sp-4:  16px;
+      --sp-5:  20px;
+      --sp-6:  24px;
+      --sp-7:  28px;
+      --sp-8:  32px;
+      --sp-10: 40px;
+      --sp-12: 48px;
+      --sp-16: 64px;
+
+      /* Border radius */
+      --r-xs:   4px;
+      --r-sm:   8px;
+      --r-md:   12px;
+      --r-lg:   16px;
+      --r-xl:   20px;
+      --r-2xl:  24px;
+      --r-full: 9999px;
+
+      /* Shadow */
+      --shadow-xs: 0 1px 2px rgba(0,0,0,.06);
+      --shadow-sm: 0 2px 8px rgba(0,0,0,.08);
+      --shadow-md: 0 4px 16px rgba(0,0,0,.10);
+      --shadow-lg: 0 8px 32px rgba(0,0,0,.12);
+      --shadow-brand: 0 4px 20px rgba(11,76,134,.25);
+    }
+
+    /* ─── Reset / Base ──────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; scroll-behavior: smooth; }
+    body {
+      font-family: var(--font-sans);
+      background: var(--gray-50);
+      color: var(--gray-900);
+      line-height: 1.5;
+    }
+
+    /* ─── Layout helpers ────────────────────────────────────── */
+    .page { max-width: 1200px; margin: 0 auto; padding: var(--sp-8) var(--sp-6); }
+    .section { margin-bottom: var(--sp-16); }
+    .section-title {
+      font-size: var(--text-2xl);
+      font-weight: var(--fw-bold);
+      color: var(--gray-900);
+      margin-bottom: var(--sp-2);
+      padding-bottom: var(--sp-3);
+      border-bottom: 2px solid var(--primary-700);
+    }
+    .section-sub {
+      font-size: var(--text-sm);
+      color: var(--gray-500);
+      margin-bottom: var(--sp-6);
+    }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-4); }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-4); }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--sp-4); }
+    .grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: var(--sp-4); }
+    .flex { display: flex; }
+    .flex-wrap { display: flex; flex-wrap: wrap; gap: var(--sp-3); }
+    .flex-col { display: flex; flex-direction: column; }
+    .items-center { align-items: center; }
+    .gap-2 { gap: var(--sp-2); }
+    .gap-3 { gap: var(--sp-3); }
+    .gap-4 { gap: var(--sp-4); }
+    .label {
+      font-size: var(--text-xs);
+      font-weight: var(--fw-semibold);
+      color: var(--gray-500);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      margin-bottom: var(--sp-2);
+    }
+
+    /* ─── Top header ────────────────────────────────────────── */
+    .ds-header {
+      background: var(--primary-700);
+      color: var(--white);
+      padding: var(--sp-8) var(--sp-6);
+      margin-bottom: var(--sp-8);
+    }
+    .ds-header h1 {
+      font-size: var(--text-3xl);
+      font-weight: var(--fw-black);
+      letter-spacing: -.02em;
+    }
+    .ds-header p { font-size: var(--text-base); opacity: .75; margin-top: var(--sp-2); }
+    .ds-header .version {
+      display: inline-block;
+      margin-top: var(--sp-4);
+      background: rgba(255,255,255,.15);
+      padding: 4px 12px;
+      border-radius: var(--r-full);
+      font-size: var(--text-xs);
+      font-weight: var(--fw-semibold);
+    }
+
+    /* ─── Color swatches ────────────────────────────────────── */
+    .swatch-row { display: flex; gap: 0; border-radius: var(--r-md); overflow: hidden; margin-bottom: var(--sp-4); box-shadow: var(--shadow-sm); }
+    .swatch {
+      flex: 1;
+      height: 80px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-end;
+      padding-bottom: 8px;
+      transition: flex .2s;
+      cursor: default;
+    }
+    .swatch:hover { flex: 1.5; }
+    .swatch span {
+      font-size: 10px;
+      font-weight: 600;
+      color: rgba(255,255,255,.85);
+      text-shadow: 0 1px 3px rgba(0,0,0,.4);
+    }
+    .swatch.dark span { color: rgba(0,0,0,.55); text-shadow: none; }
+
+    .swatch-group-label {
+      font-size: var(--text-xs);
+      font-weight: var(--fw-semibold);
+      color: var(--gray-500);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      margin-bottom: var(--sp-2);
+    }
+
+    /* ─── Typography ────────────────────────────────────────── */
+    .type-row {
+      display: flex;
+      align-items: baseline;
+      gap: var(--sp-4);
+      padding: var(--sp-3) 0;
+      border-bottom: 1px solid var(--gray-100);
+    }
+    .type-meta {
+      min-width: 140px;
+      font-size: var(--text-xs);
+      font-weight: var(--fw-semibold);
+      color: var(--gray-400);
+      font-family: 'Inter', monospace;
+    }
+
+    /* ─── Spacing ───────────────────────────────────────────── */
+    .spacing-row { display: flex; align-items: center; gap: var(--sp-4); padding: var(--sp-2) 0; }
+    .spacing-bar { background: var(--primary-300); border-radius: 2px; height: 8px; }
+    .spacing-label { font-size: var(--text-xs); font-family: 'Inter', monospace; color: var(--gray-500); min-width: 80px; }
+
+    /* ─── Buttons ───────────────────────────────────────────── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--sp-2);
+      font-family: var(--font-sans);
+      font-weight: var(--fw-semibold);
+      border: none;
+      cursor: pointer;
+      transition: all .15s ease;
+      white-space: nowrap;
+      line-height: 1;
+    }
+    .btn:active { transform: scale(.97); }
+
+    /* Sizes */
+    .btn-xs  { font-size: var(--text-xs);  padding: 6px 12px;  border-radius: var(--r-sm); }
+    .btn-sm  { font-size: var(--text-sm);  padding: 9px 16px;  border-radius: var(--r-sm); }
+    .btn-md  { font-size: var(--text-base); padding: 12px 20px; border-radius: var(--r-md); }
+    .btn-lg  { font-size: var(--text-md);  padding: 15px 28px; border-radius: var(--r-md); }
+    .btn-xl  { font-size: var(--text-lg);  padding: 18px 36px; border-radius: var(--r-lg); }
+    .btn-full { width: 100%; }
+
+    /* Variants — Primary */
+    .btn-primary { background: var(--primary-700); color: var(--white); box-shadow: var(--shadow-brand); }
+    .btn-primary:hover { background: var(--primary-800); }
+
+    /* Variants — Secondary */
+    .btn-secondary { background: var(--primary-50); color: var(--primary-700); border: 1.5px solid var(--primary-200); }
+    .btn-secondary:hover { background: var(--primary-100); }
+
+    /* Variants — Ghost */
+    .btn-ghost { background: transparent; color: var(--primary-700); border: 1.5px solid var(--primary-700); }
+    .btn-ghost:hover { background: var(--primary-50); }
+
+    /* Variants — Danger */
+    .btn-danger { background: var(--error-500); color: var(--white); }
+    .btn-danger:hover { background: #dc2626; }
+
+    /* Variants — Worker */
+    .btn-worker { background: var(--worker-400); color: var(--gray-900); }
+    .btn-worker:hover { background: var(--worker-500); }
+
+    /* Variants — Manager */
+    .btn-manager { background: var(--manager-500); color: var(--white); }
+    .btn-manager:hover { background: var(--manager-600); }
+
+    /* Disabled */
+    .btn-disabled, .btn:disabled {
+      background: var(--gray-200) !important;
+      color: var(--gray-400) !important;
+      cursor: not-allowed;
+      box-shadow: none !important;
+      border-color: var(--gray-200) !important;
+    }
+
+    /* ─── Badges / Tags ─────────────────────────────────────── */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      font-weight: var(--fw-medium);
+      padding: 4px 9px;
+      border-radius: var(--r-xs);
+      line-height: 1.3;
+      letter-spacing: .01em;
+    }
+    /* 상태 배지 — 테두리 기반, 배경 거의 없음 */
+    .badge-success  { background: transparent; color: #15803d; border: 1px solid #86efac; }
+    .badge-warning  { background: transparent; color: #92400e; border: 1px solid #fcd34d; }
+    .badge-error    { background: transparent; color: #b91c1c; border: 1px solid #fca5a5; }
+    .badge-gray     { background: transparent; color: var(--gray-500); border: 1px solid var(--gray-300); }
+    /* 역할 배지 — 단색 소형 칩 */
+    .badge-worker   { background: var(--worker-400); color: var(--gray-900); border: none; font-weight: var(--fw-semibold); }
+    .badge-manager  { background: var(--primary-700); color: var(--white); border: none; font-weight: var(--fw-semibold); }
+    /* 온체인 / 브랜드 */
+    .badge-primary  { background: transparent; color: var(--primary-700); border: 1px solid var(--primary-300); }
+    .badge-dark     { background: var(--gray-900); color: var(--white); border: none; font-size: 10px; letter-spacing: .04em; }
+    /* dot — 사용 금지, 삭제 예정 */
+
+    /* ─── Inputs ────────────────────────────────────────────── */
+    .input-wrap { display: flex; flex-direction: column; gap: var(--sp-1); }
+    .input-label { font-size: var(--text-sm); font-weight: var(--fw-medium); color: var(--gray-700); }
+    .input-hint  { font-size: var(--text-xs); color: var(--gray-400); }
+    .input-error-msg { font-size: var(--text-xs); color: var(--error-500); }
+
+    .input {
+      width: 100%;
+      font-family: var(--font-sans);
+      font-size: var(--text-base);
+      color: var(--gray-900);
+      background: var(--white);
+      border: 1.5px solid var(--gray-300);
+      border-radius: var(--r-md);
+      padding: 11px 14px;
+      outline: none;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .input::placeholder { color: var(--gray-400); }
+    .input:focus { border-color: var(--primary-500); box-shadow: 0 0 0 3px rgba(11,76,134,.12); }
+    .input.error { border-color: var(--error-500); }
+    .input.error:focus { box-shadow: 0 0 0 3px rgba(239,68,68,.12); }
+    .input:disabled { background: var(--gray-100); color: var(--gray-400); cursor: not-allowed; }
+
+    .input-icon-wrap { position: relative; }
+    .input-icon-wrap .input { padding-left: 40px; }
+    .input-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--gray-400); font-size: 18px; }
+
+    /* ─── Cards ─────────────────────────────────────────────── */
+    .card {
+      background: var(--white);
+      border-radius: var(--r-xl);
+      padding: var(--sp-5);
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--gray-100);
+    }
+    .card-title { font-size: var(--text-md); font-weight: var(--fw-bold); color: var(--gray-900); }
+    .card-sub   { font-size: var(--text-sm); color: var(--gray-500); margin-top: 2px; }
+
+    /* Store card (알바생 홈) */
+    .store-card {
+      background: var(--white);
+      border-radius: var(--r-xl);
+      padding: var(--sp-4) var(--sp-5);
+      box-shadow: var(--shadow-sm);
+      border: 1.5px solid var(--gray-100);
+      display: flex;
+      align-items: center;
+      gap: var(--sp-3);
+      cursor: pointer;
+      transition: all .15s;
+    }
+    .store-card:hover { border-color: var(--primary-300); box-shadow: var(--shadow-md); transform: translateY(-1px); }
+    .store-card.pending { opacity: .7; border-style: dashed; cursor: default; }
+    .store-icon {
+      width: 48px; height: 48px;
+      background: var(--primary-50);
+      border-radius: var(--r-md);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px;
+      flex-shrink: 0;
+    }
+    .store-info { flex: 1; }
+    .store-name { font-size: var(--text-base); font-weight: var(--fw-semibold); color: var(--gray-900); }
+    .store-detail { font-size: var(--text-xs); color: var(--gray-500); margin-top: 2px; }
+    .store-arrow { color: var(--gray-400); font-size: 18px; }
+
+    /* SBT Badge card */
+    .sbt-badge {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--sp-2);
+      padding: var(--sp-4);
+      background: var(--white);
+      border-radius: var(--r-xl);
+      box-shadow: var(--shadow-sm);
+      border: 1.5px solid var(--gray-100);
+    }
+    .sbt-badge-icon {
+      width: 64px; height: 64px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 28px;
+    }
+    .sbt-badge-name { font-size: var(--text-sm); font-weight: var(--fw-semibold); color: var(--gray-800); text-align: center; }
+    .sbt-badge-desc { font-size: var(--text-xs); color: var(--gray-400); text-align: center; }
+    .sbt-badge.locked { opacity: .4; filter: grayscale(1); }
+
+    /* Progress bar */
+    .progress-wrap { }
+    .progress-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: var(--sp-2); }
+    .progress-label { font-size: var(--text-sm); font-weight: var(--fw-medium); color: var(--gray-700); }
+    .progress-value { font-size: var(--text-sm); font-weight: var(--fw-bold); color: var(--primary-700); }
+    .progress-track {
+      height: 8px; background: var(--gray-100); border-radius: var(--r-full); overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%; border-radius: var(--r-full);
+      background: linear-gradient(90deg, var(--primary-500), var(--primary-700));
+      transition: width .4s ease;
+    }
+
+    /* ─── Navigation bar ────────────────────────────────────── */
+    .phone-frame {
+      width: 375px;
+      background: var(--gray-50);
+      border-radius: 40px;
+      overflow: hidden;
+      box-shadow: var(--shadow-lg), 0 0 0 8px var(--gray-200);
+      position: relative;
+    }
+    .phone-screen { height: 680px; overflow-y: auto; overflow-x: hidden; }
+    .phone-screen::-webkit-scrollbar { display: none; }
+
+    .status-bar {
+      height: 44px;
+      background: var(--primary-700);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      font-size: 12px;
+      font-weight: 600;
+      color: white;
+    }
+
+    .tab-bar {
+      position: sticky;
+      bottom: 0;
+      background: var(--white);
+      border-top: 1px solid var(--gray-100);
+      display: flex;
+      box-shadow: 0 -2px 12px rgba(0,0,0,.06);
+    }
+    .tab-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 4px 12px;
+      gap: 3px;
+      cursor: pointer;
+      transition: color .15s;
+    }
+    .tab-icon { font-size: 22px; }
+    .tab-label { font-size: 10px; font-weight: 600; }
+    .tab-item.active { color: var(--primary-700); }
+    .tab-item:not(.active) { color: var(--gray-400); }
+
+    .top-bar {
+      background: var(--white);
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--gray-100);
+    }
+    .top-bar-title { font-size: var(--text-lg); font-weight: var(--fw-bold); color: var(--gray-900); }
+    .top-bar-action { color: var(--primary-700); font-size: var(--text-sm); font-weight: var(--fw-semibold); cursor: pointer; }
+
+    /* ─── QR ────────────────────────────────────────────────── */
+    .qr-box {
+      background: var(--white);
+      border: 2px solid var(--gray-200);
+      border-radius: var(--r-xl);
+      padding: var(--sp-4);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--sp-3);
+    }
+    .qr-grid {
+      width: 140px; height: 140px;
+      background:
+        repeating-conic-gradient(var(--gray-800) 0% 25%, white 0% 50%) 0 0 / 14px 14px;
+      border-radius: var(--r-sm);
+    }
+    .qr-timer {
+      font-size: var(--text-2xl);
+      font-weight: var(--fw-black);
+      font-family: 'Inter', monospace;
+      color: var(--primary-700);
+    }
+    .qr-label { font-size: var(--text-xs); color: var(--gray-400); }
+
+    /* ─── Alert / Toast ─────────────────────────────────────── */
+    .alert {
+      display: flex;
+      gap: var(--sp-3);
+      padding: var(--sp-4) var(--sp-5);
+      border-radius: var(--r-lg);
+      font-size: var(--text-sm);
+      background: var(--white);
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--gray-100);
+      align-items: flex-start;
+    }
+    .alert-indicator {
+      width: 3px;
+      align-self: stretch;
+      border-radius: 2px;
+      flex-shrink: 0;
+      margin: 1px 0;
+    }
+    .alert-body { flex: 1; }
+    .alert-title { font-weight: var(--fw-semibold); color: var(--gray-900); font-size: var(--text-sm); }
+    .alert-desc  { margin-top: 3px; color: var(--gray-500); font-size: var(--text-xs); line-height: 1.6; }
+    .alert-dismiss { color: var(--gray-300); font-size: 16px; cursor: pointer; flex-shrink: 0; padding-top: 1px; }
+    .alert-dismiss:hover { color: var(--gray-500); }
+
+    .alert-info    .alert-indicator { background: #3b82f6; }
+    .alert-success .alert-indicator { background: #22c55e; }
+    .alert-warning .alert-indicator { background: #f59e0b; }
+    .alert-error   .alert-indicator { background: #ef4444; }
+
+    /* Toast — 상단 플로팅 */
+    .toast {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-3);
+      padding: 13px 16px;
+      border-radius: var(--r-lg);
+      background: var(--gray-900);
+      color: var(--white);
+      font-size: var(--text-sm);
+      box-shadow: var(--shadow-lg);
+      max-width: 340px;
+    }
+    .toast-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .toast-text { flex: 1; font-weight: var(--fw-medium); }
+    .toast-sub  { font-size: var(--text-xs); color: rgba(255,255,255,.5); margin-top: 1px; }
+
+    /* ─── Divider ───────────────────────────────────────────── */
+    .divider { border: none; border-top: 1px solid var(--gray-200); margin: var(--sp-4) 0; }
+    .divider-label {
+      display: flex; align-items: center; gap: var(--sp-3);
+      color: var(--gray-400); font-size: var(--text-xs); font-weight: var(--fw-semibold);
+      margin: var(--sp-5) 0;
+    }
+    .divider-label::before, .divider-label::after {
+      content: ''; flex: 1; height: 1px; background: var(--gray-200);
+    }
+
+    /* ─── Modal ─────────────────────────────────────────────── */
+    .modal-overlay {
+      background: rgba(0,0,0,.45);
+      border-radius: var(--r-xl);
+      padding: var(--sp-6);
+      display: flex;
+      align-items: flex-end;
+    }
+    .modal-sheet {
+      background: var(--white);
+      border-radius: var(--r-2xl) var(--r-2xl) 0 0;
+      padding: var(--sp-6);
+      width: 100%;
+    }
+    .modal-handle {
+      width: 40px; height: 4px;
+      background: var(--gray-300);
+      border-radius: var(--r-full);
+      margin: 0 auto var(--sp-5);
+    }
+    .modal-title { font-size: var(--text-lg); font-weight: var(--fw-bold); color: var(--gray-900); }
+    .modal-body  { font-size: var(--text-sm); color: var(--gray-500); margin-top: var(--sp-2); }
+
+    /* ─── List item ─────────────────────────────────────────── */
+    .list-item {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-3);
+      padding: var(--sp-4);
+      background: var(--white);
+      border-bottom: 1px solid var(--gray-100);
+      cursor: pointer;
+    }
+    .list-item:first-child { border-radius: var(--r-md) var(--r-md) 0 0; }
+    .list-item:last-child  { border-radius: 0 0 var(--r-md) var(--r-md); border-bottom: none; }
+    .list-item:only-child  { border-radius: var(--r-md); }
+    .list-item:hover { background: var(--gray-50); }
+    .list-avatar {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      background: var(--primary-100);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; flex-shrink: 0;
+    }
+    .list-content { flex: 1; }
+    .list-name  { font-size: var(--text-sm); font-weight: var(--fw-semibold); color: var(--gray-900); }
+    .list-desc  { font-size: var(--text-xs); color: var(--gray-500); margin-top: 1px; }
+    .list-right { color: var(--gray-400); font-size: 14px; }
+
+    /* ─── Stat card ─────────────────────────────────────────── */
+    .stat-card {
+      background: var(--white);
+      border-radius: var(--r-xl);
+      padding: var(--sp-4) var(--sp-5);
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--gray-100);
+    }
+    .stat-label { font-size: var(--text-xs); font-weight: var(--fw-semibold); color: var(--gray-500); text-transform: uppercase; letter-spacing: .05em; }
+    .stat-value { font-size: var(--text-2xl); font-weight: var(--fw-black); color: var(--gray-900); margin-top: var(--sp-1); line-height: 1; }
+    .stat-change { font-size: var(--text-xs); color: var(--success-500); font-weight: var(--fw-semibold); margin-top: var(--sp-1); }
+    .stat-change.down { color: var(--error-500); }
+
+    /* ─── Calendar cell ─────────────────────────────────────── */
+    .cal-header { display: grid; grid-template-columns: repeat(7,1fr); text-align: center; margin-bottom: 4px; }
+    .cal-header span { font-size: 11px; font-weight: 600; color: var(--gray-400); padding: 4px 0; }
+    .cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 2px; }
+    .cal-day {
+      aspect-ratio: 1;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 500; color: var(--gray-700);
+      border-radius: var(--r-sm);
+      cursor: pointer;
+      position: relative;
+    }
+    .cal-day:hover { background: var(--gray-100); }
+    .cal-day.today { background: var(--primary-700); color: white; font-weight: 700; }
+    .cal-day.worked::after {
+      content: '';
+      position: absolute; bottom: 3px; left: 50%; transform: translateX(-50%);
+      width: 4px; height: 4px; border-radius: 50%;
+      background: var(--success-500);
+    }
+    .cal-day.absent::after { background: var(--error-500); }
+    .cal-day.extra::after  { background: var(--worker-400); }
+    .cal-day.other { color: var(--gray-300); }
+    .cal-day.sun { color: #ef4444; }
+    .cal-day.sat { color: #3b82f6; }
+
+    /* ─── Preview box ───────────────────────────────────────── */
+    .preview-box {
+      background: var(--gray-100);
+      border-radius: var(--r-lg);
+      padding: var(--sp-6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    code {
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      background: var(--gray-100);
+      padding: 2px 6px;
+      border-radius: var(--r-xs);
+      color: var(--primary-700);
+    }
+
+    /* ─── SVG icon helpers ──────────────────────────────────── */
+    .icon { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .icon svg { display: block; }
+    .store-icon { width: 48px; height: 48px; background: var(--gray-100); border-radius: var(--r-md); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .store-icon svg { width: 22px; height: 22px; stroke: var(--gray-600); fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+  </style>
+</head>
+<body>
+
+<!-- ─────────────────────────────────────────── HEADER -->
+<div class="ds-header">
+  <div class="page" style="padding-top:0;padding-bottom:0">
+    <h1>Alba-SBT Design System</h1>
+    <p>알바 경력 증명 서비스 · React Native (Expo) · 공통 UI 패턴 정의서</p>
+    <span class="version">v0.1 · 2026-05</span>
+  </div>
+</div>
+
+<div class="page">
+
+  <!-- ─────────────────────────────────────── 1. COLOR -->
+  <section class="section">
+    <h2 class="section-title">01 · Color</h2>
+    <p class="section-sub">브랜드 컬러 #0b4c86 기준. 알바생(Amber), 사장님(Teal) 역할 컬러 분리.</p>
+
+    <div class="swatch-group-label">Brand Primary</div>
+    <div class="swatch-row">
+      <div class="swatch" style="background:#061e36"><span>900</span></div>
+      <div class="swatch" style="background:#0b3260"><span>800</span></div>
+      <div class="swatch" style="background:#0b4c86"><span>★ 700</span></div>
+      <div class="swatch" style="background:#1160a4"><span>600</span></div>
+      <div class="swatch" style="background:#1a78c8"><span>500</span></div>
+      <div class="swatch" style="background:#4096d8"><span>400</span></div>
+      <div class="swatch" style="background:#74b5e6"><span>300</span></div>
+      <div class="swatch dark" style="background:#b0d4f1"><span>200</span></div>
+      <div class="swatch dark" style="background:#dceef9"><span>100</span></div>
+      <div class="swatch dark" style="background:#f0f7fd"><span>50</span></div>
+    </div>
+
+    <div class="grid-2" style="margin-top:var(--sp-4)">
+      <div>
+        <div class="swatch-group-label">Worker · Amber (알바생)</div>
+        <div class="swatch-row">
+          <div class="swatch" style="background:#b45309"><span>600</span></div>
+          <div class="swatch" style="background:#d97706"><span>500</span></div>
+          <div class="swatch" style="background:#f59e0b"><span>400</span></div>
+          <div class="swatch dark" style="background:#fcd34d"><span>300</span></div>
+          <div class="swatch dark" style="background:#fef3c7"><span>100</span></div>
+        </div>
+      </div>
+      <div>
+        <div class="swatch-group-label">Manager · Teal (사장님)</div>
+        <div class="swatch-row">
+          <div class="swatch" style="background:#0d7377"><span>600</span></div>
+          <div class="swatch" style="background:#0e9aa7"><span>500</span></div>
+          <div class="swatch" style="background:#14b8a6"><span>400</span></div>
+          <div class="swatch dark" style="background:#5eead4"><span>300</span></div>
+          <div class="swatch dark" style="background:#ccfbf1"><span>100</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:var(--sp-4)">
+      <div class="swatch-group-label">Semantic</div>
+      <div class="flex-wrap">
+        <div style="text-align:center">
+          <div style="width:56px;height:40px;border-radius:var(--r-sm);background:#22c55e;margin-bottom:4px"></div>
+          <span style="font-size:11px;color:var(--gray-500)">Success</span>
+        </div>
+        <div style="text-align:center">
+          <div style="width:56px;height:40px;border-radius:var(--r-sm);background:#f59e0b;margin-bottom:4px"></div>
+          <span style="font-size:11px;color:var(--gray-500)">Warning</span>
+        </div>
+        <div style="text-align:center">
+          <div style="width:56px;height:40px;border-radius:var(--r-sm);background:#ef4444;margin-bottom:4px"></div>
+          <span style="font-size:11px;color:var(--gray-500)">Error</span>
+        </div>
+        <div style="text-align:center">
+          <div style="width:56px;height:40px;border-radius:var(--r-sm);background:#3b82f6;margin-bottom:4px"></div>
+          <span style="font-size:11px;color:var(--gray-500)">Info</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:var(--sp-4)">
+      <div class="swatch-group-label">Neutral Gray</div>
+      <div class="swatch-row">
+        <div class="swatch" style="background:#111827"><span>900</span></div>
+        <div class="swatch" style="background:#1f2937"><span>800</span></div>
+        <div class="swatch" style="background:#374151"><span>700</span></div>
+        <div class="swatch" style="background:#4b5563"><span>600</span></div>
+        <div class="swatch" style="background:#6b7280"><span>500</span></div>
+        <div class="swatch" style="background:#9ca3af"><span>400</span></div>
+        <div class="swatch dark" style="background:#d1d5db"><span>300</span></div>
+        <div class="swatch dark" style="background:#e5e7eb"><span>200</span></div>
+        <div class="swatch dark" style="background:#f3f4f6"><span>100</span></div>
+        <div class="swatch dark" style="background:#f9fafb"><span>50</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────────────────── 2. TYPOGRAPHY -->
+  <section class="section">
+    <h2 class="section-title">02 · Typography</h2>
+    <p class="section-sub">Noto Sans KR + Inter. 한국어 본문 15px 기준.</p>
+
+    <div class="card">
+      <div class="type-row">
+        <div class="type-meta">3xl · 32px · Black</div>
+        <div style="font-size:32px;font-weight:900;line-height:1.2">알바 경력 증명</div>
+      </div>
+      <div class="type-row">
+        <div class="type-meta">2xl · 26px · Bold</div>
+        <div style="font-size:26px;font-weight:700">내 경력 프로필</div>
+      </div>
+      <div class="type-row">
+        <div class="type-meta">xl · 22px · Bold</div>
+        <div style="font-size:22px;font-weight:700">매장 근태 현황</div>
+      </div>
+      <div class="type-row">
+        <div class="type-meta">lg · 19px · Semibold</div>
+        <div style="font-size:19px;font-weight:600">QR 출퇴근 등록</div>
+      </div>
+      <div class="type-row">
+        <div class="type-meta">md · 17px · Semibold</div>
+        <div style="font-size:17px;font-weight:600">이번 달 출근 횟수</div>
+      </div>
+      <div class="type-row">
+        <div class="type-meta">base · 15px · Regular</div>
+        <div style="font-size:15px;font-weight:400">오늘 오후 6시까지 예약 퇴근입니다. 근무 시작 후 QR 스캔을 잊지 마세요.</div>
+      </div>
+      <div class="type-row">
+        <div class="type-meta">sm · 13px · Regular</div>
+        <div style="font-size:13px;font-weight:400;color:var(--gray-500)">승인 대기 중 · 2024년 05월 06일 등록</div>
+      </div>
+      <div class="type-row">
+        <div class="type-meta">xs · 11px · Semibold</div>
+        <div style="font-size:11px;font-weight:600;color:var(--gray-400);letter-spacing:.06em;text-transform:uppercase">STORE CODE · LEVEL · STATUS</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────────────────── 3. SPACING -->
+  <section class="section">
+    <h2 class="section-title">03 · Spacing</h2>
+    <p class="section-sub">4px 배수 기반 스케일.</p>
+
+    <div class="card">
+      <div class="spacing-row"><div class="spacing-label">sp-1 · 4px</div><div class="spacing-bar" style="width:4px"></div></div>
+      <div class="spacing-row"><div class="spacing-label">sp-2 · 8px</div><div class="spacing-bar" style="width:8px"></div></div>
+      <div class="spacing-row"><div class="spacing-label">sp-3 · 12px</div><div class="spacing-bar" style="width:12px"></div></div>
+      <div class="spacing-row"><div class="spacing-label">sp-4 · 16px</div><div class="spacing-bar" style="width:16px"></div></div>
+      <div class="spacing-row"><div class="spacing-label">sp-5 · 20px</div><div class="spacing-bar" style="width:20px"></div></div>
+      <div class="spacing-row"><div class="spacing-label">sp-6 · 24px</div><div class="spacing-bar" style="width:24px"></div></div>
+      <div class="spacing-row"><div class="spacing-label">sp-8 · 32px</div><div class="spacing-bar" style="width:32px"></div></div>
+      <div class="spacing-row"><div class="spacing-label">sp-10 · 40px</div><div class="spacing-bar" style="width:40px"></div></div>
+      <div class="spacing-row"><div class="spacing-label">sp-12 · 48px</div><div class="spacing-bar" style="width:48px"></div></div>
+      <div class="spacing-row"><div class="spacing-label">sp-16 · 64px</div><div class="spacing-bar" style="width:64px"></div></div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────────────────── 4. BUTTONS -->
+  <section class="section">
+    <h2 class="section-title">04 · Buttons</h2>
+    <p class="section-sub">크기 5단계 × 7가지 Variant.</p>
+
+    <div class="card flex-col gap-4">
+      <div>
+        <div class="label">Variants</div>
+        <div class="flex-wrap">
+          <button class="btn btn-md btn-primary">Primary 버튼</button>
+          <button class="btn btn-md btn-secondary">Secondary 버튼</button>
+          <button class="btn btn-md btn-ghost">Ghost 버튼</button>
+          <button class="btn btn-md btn-danger">삭제하기</button>
+          <button class="btn btn-md btn-worker">알바생 전용</button>
+          <button class="btn btn-md btn-manager">사장님 전용</button>
+          <button class="btn btn-md btn-disabled" disabled>비활성화</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="label">Sizes</div>
+        <div class="flex-wrap items-center">
+          <button class="btn btn-xs btn-primary">XS · 미니</button>
+          <button class="btn btn-sm btn-primary">SM · 소형</button>
+          <button class="btn btn-md btn-primary">MD · 기본</button>
+          <button class="btn btn-lg btn-primary">LG · 대형</button>
+          <button class="btn btn-xl btn-primary">XL · 강조</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="label">Full-width (CTA)</div>
+        <button class="btn btn-lg btn-primary btn-full">출근 QR 스캔하기</button>
+        <div style="height:8px"></div>
+        <button class="btn btn-lg btn-ghost btn-full">취소</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────────────────── 5. BADGES -->
+  <section class="section">
+    <h2 class="section-title">05 · Badges &amp; Tags</h2>
+    <p class="section-sub">상태 표시, 역할 구분, 온체인 검증 레이블.</p>
+
+    <div class="card flex-col gap-4">
+      <div>
+        <div class="label">상태 — 출결</div>
+        <div class="flex-wrap">
+          <span class="badge badge-success badge">출근 완료</span>
+          <span class="badge badge-warning badge">승인 대기</span>
+          <span class="badge badge-error badge">결근</span>
+          <span class="badge badge-gray">미출근</span>
+          <span class="badge badge-gray">미등록</span>
+        </div>
+      </div>
+      <div>
+        <div class="label">역할</div>
+        <div class="flex-wrap">
+          <span class="badge badge-worker">알바생</span>
+          <span class="badge badge-manager">사장님</span>
+        </div>
+      </div>
+      <div>
+        <div class="label">온체인 · 레벨</div>
+        <div class="flex-wrap">
+          <span class="badge badge-dark">온체인 기록</span>
+          <span class="badge badge-primary">EAS 검증됨</span>
+          <span class="badge badge-primary">SBT 발급</span>
+          <span class="badge badge-gray">Lv.2 도전 중</span>
+          <span class="badge badge-success">Lv.3 달성</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────────────────── 6. INPUTS -->
+  <section class="section">
+    <h2 class="section-title">06 · Inputs</h2>
+    <p class="section-sub">폼 입력 컴포넌트 전체 상태.</p>
+
+    <div class="grid-2">
+      <div class="card flex-col gap-4">
+        <div class="input-wrap">
+          <label class="input-label">이름 <span style="color:var(--error-500)">*</span></label>
+          <input class="input" type="text" placeholder="홍길동" />
+          <span class="input-hint">실명을 입력해주세요</span>
+        </div>
+        <div class="input-wrap">
+          <label class="input-label">전화번호</label>
+          <div class="input-icon-wrap">
+            <span class="input-icon icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg></span>
+            <input class="input" type="text" placeholder="010-0000-0000" />
+          </div>
+        </div>
+        <div class="input-wrap">
+          <label class="input-label">매장 코드</label>
+          <input class="input" type="text" placeholder="6자리 코드 입력" maxlength="6" style="font-size:20px;font-weight:700;letter-spacing:.2em;text-align:center" />
+          <span class="input-hint">사장님에게 받은 6자리 코드를 입력하세요</span>
+        </div>
+      </div>
+      <div class="card flex-col gap-4">
+        <div class="input-wrap">
+          <label class="input-label">이메일</label>
+          <input class="input" type="email" value="user@example.com" />
+        </div>
+        <div class="input-wrap">
+          <label class="input-label">오류 상태</label>
+          <input class="input error" type="text" value="잘못된 코드" />
+          <span class="input-error-msg">존재하지 않는 매장 코드입니다</span>
+        </div>
+        <div class="input-wrap">
+          <label class="input-label">비활성화</label>
+          <input class="input" type="text" value="변경 불가" disabled />
+          <span class="input-hint">계정 유형은 변경할 수 없습니다</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────────────────── 7. CARDS -->
+  <section class="section">
+    <h2 class="section-title">07 · Cards</h2>
+    <p class="section-sub">매장 카드, SBT 배지, 통계, 프로그레스.</p>
+
+    <div class="grid-2" style="margin-bottom:var(--sp-4)">
+      <div>
+        <div class="label">매장 카드 (활성)</div>
+        <div class="store-card">
+          <div class="store-icon"><svg viewBox="0 0 24 24"><path d="M3 11h18M5 11V7a7 7 0 0114 0v4M3 15h18M5 15v2a2 2 0 002 2h10a2 2 0 002-2v-2"/></svg></div>
+          <div class="store-info">
+            <div class="store-name">맥도날드 신촌점</div>
+            <div class="store-detail">외식·패스트푸드 · 연결됨</div>
+          </div>
+          <span class="store-arrow">›</span>
+        </div>
+        <div style="height:8px"></div>
+        <div class="store-card pending">
+          <div class="store-icon"><svg viewBox="0 0 24 24"><path d="M17 8h1a4 4 0 010 8h-1M3 8h14v9a4 4 0 01-4 4H7a4 4 0 01-4-4V8zM6 1v3M10 1v3M14 1v3"/></svg></div>
+          <div class="store-info">
+            <div class="store-name">스타벅스 강남점</div>
+            <div class="store-detail">카페 · 사장님 승인 대기</div>
+          </div>
+          <span class="badge badge-warning" style="margin-left:auto">대기</span>
+        </div>
+      </div>
+
+      <div>
+        <div class="label">SBT 배지</div>
+        <div class="grid-3" style="gap:var(--sp-3)">
+          <div class="sbt-badge">
+            <div class="sbt-badge-icon" style="background:var(--primary-100)">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--primary-700)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg>
+            </div>
+            <div class="sbt-badge-name">6개월 근속</div>
+            <div class="sbt-badge-desc">EAS_EXP</div>
+          </div>
+          <div class="sbt-badge">
+            <div class="sbt-badge-icon" style="background:var(--worker-100)">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--worker-600)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <div class="sbt-badge-name">성실 인증</div>
+            <div class="sbt-badge-desc">EAS_FAITH</div>
+          </div>
+          <div class="sbt-badge locked">
+            <div class="sbt-badge-icon" style="background:var(--gray-100)">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--gray-400)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+            </div>
+            <div class="sbt-badge-name">경력 완성</div>
+            <div class="sbt-badge-desc">잠금</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-4" style="margin-bottom:var(--sp-4)">
+      <div class="stat-card">
+        <div class="stat-label">이번 달 출근</div>
+        <div class="stat-value">18<span style="font-size:16px;font-weight:500">일</span></div>
+        <div class="stat-change">↑ 지난달 +2</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">지각 횟수</div>
+        <div class="stat-value">1<span style="font-size:16px;font-weight:500">회</span></div>
+        <div class="stat-change down">↑ 지난달 +1</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">총 근무일</div>
+        <div class="stat-value">142<span style="font-size:16px;font-weight:500">일</span></div>
+        <div class="stat-change">누적</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">레벨</div>
+        <div class="stat-value" style="color:var(--primary-700)">Lv.2</div>
+        <div class="stat-change">다음까지 58일</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="label">레벨업 프로그레스</div>
+      <div class="flex-col gap-3">
+        <div class="progress-wrap">
+          <div class="progress-header">
+            <span class="progress-label">6개월 근속 (EAS_EXP)</span>
+            <span class="progress-value">142 / 180일</span>
+          </div>
+          <div class="progress-track"><div class="progress-fill" style="width:79%"></div></div>
+        </div>
+        <div class="progress-wrap">
+          <div class="progress-header">
+            <span class="progress-label">성실 인증 (지각 3회 이하)</span>
+            <span class="progress-value">1 / 3회</span>
+          </div>
+          <div class="progress-track"><div class="progress-fill" style="width:33%;background:linear-gradient(90deg,var(--success-500),#16a34a)"></div></div>
+        </div>
+        <div class="progress-wrap">
+          <div class="progress-header">
+            <span class="progress-label">추가 근무 수락</span>
+            <span class="progress-value">4 / 5회</span>
+          </div>
+          <div class="progress-track"><div class="progress-fill" style="width:80%;background:linear-gradient(90deg,var(--worker-400),var(--worker-600))"></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────────────────── 8. ALERTS -->
+  <section class="section">
+    <h2 class="section-title">08 · Alerts &amp; Toast</h2>
+
+    <div class="label">인라인 알림 (카드 내부)</div>
+    <div class="flex-col gap-3" style="max-width:540px">
+      <div class="alert alert-info">
+        <div class="alert-indicator"></div>
+        <div class="alert-body">
+          <div class="alert-title">출근 QR 안내</div>
+          <div class="alert-desc">매장에서 생성된 QR을 스캔해야 출근 처리됩니다. GPS 위치도 함께 검증됩니다.</div>
+        </div>
+        <span class="alert-dismiss">×</span>
+      </div>
+      <div class="alert alert-success">
+        <div class="alert-indicator"></div>
+        <div class="alert-body">
+          <div class="alert-title">출근 완료</div>
+          <div class="alert-desc">오전 09:02 · 맥도날드 신촌점에 출근 기록이 저장되었습니다.</div>
+        </div>
+      </div>
+      <div class="alert alert-warning">
+        <div class="alert-indicator"></div>
+        <div class="alert-body">
+          <div class="alert-title">승인 대기</div>
+          <div class="alert-desc">스타벅스 강남점 연결 요청이 사장님 승인을 기다리고 있습니다.</div>
+        </div>
+        <span class="alert-dismiss">×</span>
+      </div>
+      <div class="alert alert-error">
+        <div class="alert-indicator"></div>
+        <div class="alert-body">
+          <div class="alert-title">QR 불일치</div>
+          <div class="alert-desc">현재 위치가 매장과 일치하지 않습니다. 매장 내에서 다시 시도해주세요.</div>
+        </div>
+        <span class="alert-dismiss">×</span>
+      </div>
+    </div>
+
+    <div class="label" style="margin-top:var(--sp-5)">Toast (상단 플로팅)</div>
+    <div class="flex-col gap-3">
+      <div class="toast">
+        <div class="toast-dot" style="background:#22c55e"></div>
+        <div>
+          <div class="toast-text">출근이 기록되었습니다</div>
+          <div class="toast-sub">오전 09:02 · 맥도날드 신촌점</div>
+        </div>
+      </div>
+      <div class="toast">
+        <div class="toast-dot" style="background:#ef4444"></div>
+        <div>
+          <div class="toast-text">QR 검증 실패</div>
+          <div class="toast-sub">위치가 매장과 일치하지 않습니다</div>
+        </div>
+      </div>
+      <div class="toast">
+        <div class="toast-dot" style="background:#f59e0b"></div>
+        <div>
+          <div class="toast-text">승인 대기 중</div>
+          <div class="toast-sub">스타벅스 강남점 연결 요청 전송됨</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────────────────── 9. LIST -->
+  <section class="section">
+    <h2 class="section-title">09 · List Items</h2>
+    <p class="section-sub">알바생 목록, 추가 근무 요청 등.</p>
+
+    <div style="border-radius:var(--r-md);overflow:hidden;box-shadow:var(--shadow-sm)">
+      <div class="list-item">
+        <div class="list-avatar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--primary-600)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></div>
+        <div class="list-content">
+          <div class="list-name">홍길동</div>
+          <div class="list-desc">등록일 2024.03.01 · 총 142일 근무</div>
+        </div>
+        <span class="badge badge-success">재직 중</span>
+        <span class="list-right">›</span>
+      </div>
+      <div class="list-item">
+        <div class="list-avatar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--primary-600)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></div>
+        <div class="list-content">
+          <div class="list-name">김민지</div>
+          <div class="list-desc">등록일 2024.05.01 · 승인 대기 중</div>
+        </div>
+        <span class="badge badge-warning">승인 대기</span>
+        <span class="list-right">›</span>
+      </div>
+      <div class="list-item">
+        <div class="list-avatar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--primary-600)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+        <div class="list-content">
+          <div class="list-name">추가 근무 · 05월 10일 (토)</div>
+          <div class="list-desc">오전 10:00 – 오후 6:00 · 신청자 2명</div>
+        </div>
+        <button class="btn btn-sm btn-primary">수락</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────────────────── 10. CALENDAR -->
+  <section class="section">
+    <h2 class="section-title">10 · Calendar</h2>
+    <p class="section-sub">월간 근태 캘린더 컴포넌트.</p>
+
+    <div class="card" style="max-width:380px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--sp-4)">
+        <button class="btn btn-xs btn-ghost">‹</button>
+        <span style="font-size:var(--text-md);font-weight:var(--fw-bold)">2026년 5월</span>
+        <button class="btn btn-xs btn-ghost">›</button>
+      </div>
+      <div class="cal-header">
+        <span class="sun">일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span class="sat">토</span>
+      </div>
+      <div class="cal-grid">
+        <div class="cal-day sun other">27</div><div class="cal-day other worked">28</div><div class="cal-day other worked">29</div><div class="cal-day other worked">30</div><div class="cal-day other">1</div><div class="cal-day sat other">2</div><div class="cal-day sun other">3</div>
+        <div class="cal-day sun">4</div><div class="cal-day worked">5</div><div class="cal-day today">6</div><div class="cal-day">7</div><div class="cal-day">8</div><div class="cal-day sat">9</div><div class="cal-day sun">10</div>
+        <div class="cal-day sun">11</div><div class="cal-day">12</div><div class="cal-day">13</div><div class="cal-day">14</div><div class="cal-day">15</div><div class="cal-day sat extra">16</div><div class="cal-day sun">17</div>
+        <div class="cal-day sun">18</div><div class="cal-day">19</div><div class="cal-day absent">20</div><div class="cal-day">21</div><div class="cal-day">22</div><div class="cal-day sat">23</div><div class="cal-day sun">24</div>
+        <div class="cal-day sun">25</div><div class="cal-day">26</div><div class="cal-day">27</div><div class="cal-day">28</div><div class="cal-day">29</div><div class="cal-day sat">30</div><div class="cal-day sun">31</div>
+      </div>
+      <div class="flex-wrap" style="margin-top:var(--sp-3)">
+        <span style="font-size:11px;color:var(--gray-500);display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:var(--success-500);display:inline-block"></span>출근</span>
+        <span style="font-size:11px;color:var(--gray-500);display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:var(--error-500);display:inline-block"></span>결근</span>
+        <span style="font-size:11px;color:var(--gray-500);display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:var(--worker-400);display:inline-block"></span>추가 근무</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────────────────── 11. QR -->
+  <section class="section">
+    <h2 class="section-title">11 · QR Components</h2>
+    <p class="section-sub">출퇴근 QR 스캔 / 사장님 QR 생성 (10초 유효).</p>
+
+    <div class="grid-2" style="max-width:700px">
+      <div class="card" style="text-align:center">
+        <div class="label" style="text-align:left">사장님 QR 생성</div>
+        <div class="qr-box">
+          <div class="qr-grid"></div>
+          <div class="qr-timer">07</div>
+          <div class="qr-label">초 후 자동 소멸</div>
+          <span class="badge badge-success badge">QR 활성</span>
+        </div>
+        <button class="btn btn-md btn-primary btn-full" style="margin-top:var(--sp-4)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+          QR 재생성
+        </button>
+      </div>
+      <div class="card" style="text-align:center">
+        <div class="label" style="text-align:left">알바생 QR 스캔</div>
+        <div style="background:var(--gray-900);border-radius:var(--r-xl);overflow:hidden;aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px">
+          <div style="width:220px;height:220px;border:2px solid white;border-radius:12px;position:relative">
+            <div style="position:absolute;top:-1px;left:-1px;width:32px;height:32px;border-top:4px solid var(--primary-400);border-left:4px solid var(--primary-400);border-radius:8px 0 0 0"></div>
+            <div style="position:absolute;top:-1px;right:-1px;width:32px;height:32px;border-top:4px solid var(--primary-400);border-right:4px solid var(--primary-400);border-radius:0 8px 0 0"></div>
+            <div style="position:absolute;bottom:-1px;left:-1px;width:32px;height:32px;border-bottom:4px solid var(--primary-400);border-left:4px solid var(--primary-400);border-radius:0 0 0 8px"></div>
+            <div style="position:absolute;bottom:-1px;right:-1px;width:32px;height:32px;border-bottom:4px solid var(--primary-400);border-right:4px solid var(--primary-400);border-radius:0 0 8px 0"></div>
+            <div style="width:80px;height:2px;background:var(--primary-400);position:absolute;top:50%;animation:none"></div>
+          </div>
+          <span style="color:var(--gray-300);font-size:13px">매장 QR을 프레임 안에 맞춰주세요</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────────────────── 12. NAVIGATION -->
+  <section class="section">
+    <h2 class="section-title">12 · Navigation</h2>
+    <p class="section-sub">하단 탭바 · 상단 헤더 — 알바생 / 사장님 각각.</p>
+
+    <div class="grid-2">
+      <!-- Worker phone -->
+      <div>
+        <div class="label">알바생 홈 탭바</div>
+        <div class="phone-frame">
+          <div class="status-bar">
+            <span>9:41</span>
+            <span>●●●</span>
+          </div>
+          <div class="phone-screen">
+            <div class="top-bar">
+              <span class="top-bar-title">내 경력 프로필</span>
+              <span class="top-bar-action">QR 공유</span>
+            </div>
+            <div style="padding:16px">
+              <div class="card" style="margin-bottom:12px">
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+                  <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--primary-700),var(--primary-500));display:flex;align-items:center;justify-content:center;font-size:24px;color:white;font-weight:900">2</div>
+                  <div>
+                    <div style="font-size:11px;color:var(--gray-400);font-weight:600;text-transform:uppercase;letter-spacing:.05em">현재 레벨</div>
+                    <div style="font-size:19px;font-weight:700;color:var(--gray-900)">성실 알바생</div>
+                  </div>
+                </div>
+                <div class="progress-wrap">
+                  <div class="progress-header">
+                    <span class="progress-label">Lv.3까지</span>
+                    <span class="progress-value">142 / 200일</span>
+                  </div>
+                  <div class="progress-track"><div class="progress-fill" style="width:71%"></div></div>
+                </div>
+              </div>
+
+              <div style="font-size:13px;font-weight:600;color:var(--gray-700);margin-bottom:8px">내 매장</div>
+              <div class="store-card" style="margin-bottom:8px">
+                <div class="store-icon"><svg viewBox="0 0 24 24"><path d="M3 11h18M5 11V7a7 7 0 0114 0v4M3 15h18M5 15v2a2 2 0 002 2h10a2 2 0 002-2v-2"/></svg></div>
+                <div class="store-info">
+                  <div class="store-name">맥도날드 신촌점</div>
+                  <div class="store-detail">오늘 오전 9:00 출근</div>
+                </div>
+                <span class="store-arrow">›</span>
+              </div>
+              <div class="store-card pending">
+                <div class="store-icon"><svg viewBox="0 0 24 24"><path d="M17 8h1a4 4 0 010 8h-1M3 8h14v9a4 4 0 01-4 4H7a4 4 0 01-4-4V8zM6 1v3M10 1v3M14 1v3"/></svg></div>
+                <div class="store-info">
+                  <div class="store-name">스타벅스 강남점</div>
+                  <div class="store-detail">승인 대기 중</div>
+                </div>
+                <span class="badge badge-warning" style="font-size:10px">대기</span>
+              </div>
+            </div>
+          </div>
+          <div class="tab-bar">
+            <div class="tab-item active">
+              <span class="tab-icon icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>
+              <span class="tab-label">홈</span>
+            </div>
+            <div class="tab-item">
+              <span class="tab-icon icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg></span>
+              <span class="tab-label">QR 스캔</span>
+            </div>
+            <div class="tab-item">
+              <span class="tab-icon icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>
+              <span class="tab-label">근태</span>
+            </div>
+            <div class="tab-item">
+              <span class="tab-icon icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></span>
+              <span class="tab-label">추가 근무</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Manager phone -->
+      <div>
+        <div class="label">사장님 홈 탭바</div>
+        <div class="phone-frame">
+          <div class="status-bar" style="background:var(--manager-600)">
+            <span>9:41</span>
+            <span>●●●</span>
+          </div>
+          <div class="phone-screen">
+            <div class="top-bar">
+              <span class="top-bar-title">매장 관리</span>
+              <span class="top-bar-action" style="color:var(--manager-500)">+ 매장 등록</span>
+            </div>
+            <div style="padding:16px">
+              <div class="card" style="margin-bottom:12px">
+                <div style="font-size:15px;font-weight:700;color:var(--gray-900);margin-bottom:8px">맥도날드 신촌점</div>
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+                  <div style="text-align:center;padding:8px 4px;background:var(--gray-50);border-radius:var(--r-sm)">
+                    <div style="font-size:17px;font-weight:800;color:var(--gray-900)">3</div>
+                    <div style="font-size:10px;color:var(--gray-400);margin-top:2px;font-weight:500">재직</div>
+                  </div>
+                  <div style="text-align:center;padding:8px 4px;background:var(--gray-50);border-radius:var(--r-sm)">
+                    <div style="font-size:17px;font-weight:800;color:var(--gray-900)">1</div>
+                    <div style="font-size:10px;color:var(--gray-400);margin-top:2px;font-weight:500">승인 대기</div>
+                  </div>
+                  <div style="text-align:center;padding:8px 4px;background:var(--primary-50);border-radius:var(--r-sm)">
+                    <div style="font-size:17px;font-weight:800;color:var(--primary-700)">2</div>
+                    <div style="font-size:10px;color:var(--primary-500);margin-top:2px;font-weight:500">오늘 출근</div>
+                  </div>
+                </div>
+              </div>
+              <div style="font-size:13px;font-weight:600;color:var(--gray-700);margin-bottom:8px">오늘 출근 현황</div>
+              <div style="border-radius:var(--r-md);overflow:hidden;box-shadow:var(--shadow-xs)">
+                <div class="list-item">
+                  <div class="list-avatar" style="background:var(--primary-50)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--primary-600)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></div>
+                  <div class="list-content">
+                    <div class="list-name">홍길동</div>
+                    <div class="list-desc">오전 09:02 출근</div>
+                  </div>
+                  <span class="badge badge-success">출근</span>
+                </div>
+                <div class="list-item">
+                  <div class="list-avatar" style="background:var(--gray-100)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--gray-400)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></div>
+                  <div class="list-content">
+                    <div class="list-name">김민지</div>
+                    <div class="list-desc">미출근</div>
+                  </div>
+                  <span class="badge badge-gray">결근</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="tab-bar">
+            <div class="tab-item active" style="color:var(--primary-700)">
+              <span class="tab-icon icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>
+              <span class="tab-label">매장 관리</span>
+            </div>
+            <div class="tab-item">
+              <span class="tab-icon icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg></span>
+              <span class="tab-label">인사 관리</span>
+            </div>
+            <div class="tab-item">
+              <span class="tab-icon icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>
+              <span class="tab-label">근태</span>
+            </div>
+            <div class="tab-item">
+              <span class="tab-icon icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+              <span class="tab-label">경력 검증</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────────────────── 13. MODAL / BOTTOMSHEET -->
+  <section class="section">
+    <h2 class="section-title">13 · Modal / Bottom Sheet</h2>
+
+    <div class="grid-2">
+      <div>
+        <div class="label">매장 연결 코드 입력</div>
+        <div class="modal-overlay" style="background:rgba(17,24,39,.6);height:360px">
+          <div class="modal-sheet">
+            <div class="modal-handle"></div>
+            <div class="modal-title">매장 연결하기</div>
+            <div class="modal-body">사장님에게 받은 6자리 코드를 입력하세요</div>
+            <div style="height:16px"></div>
+            <input class="input" placeholder="000000" style="font-size:28px;font-weight:800;letter-spacing:.3em;text-align:center" maxlength="6" />
+            <div style="height:16px"></div>
+            <button class="btn btn-lg btn-primary btn-full">연결 요청 보내기</button>
+            <div style="height:8px"></div>
+            <button class="btn btn-lg btn-ghost btn-full">취소</button>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="label">승급 승인 확인</div>
+        <div class="modal-overlay" style="background:rgba(17,24,39,.6);height:360px">
+          <div class="modal-sheet">
+            <div class="modal-handle"></div>
+            <div class="modal-title">승급 승인</div>
+            <div class="modal-body">홍길동님의 Lv.3 승급을 승인합니다.<br>EIP-712 오프체인 서명 후 SBT가 발급됩니다.</div>
+            <div style="height:12px"></div>
+            <div class="alert alert-warning" style="font-size:13px">
+              <div class="alert-indicator"></div>
+              <div class="alert-body">
+                <div class="alert-desc">서명 후 취소할 수 없습니다. 블록체인에 영구 기록됩니다.</div>
+              </div>
+            </div>
+            <div style="height:16px"></div>
+            <button class="btn btn-lg btn-primary btn-full">서명하고 승인</button>
+            <div style="height:8px"></div>
+            <button class="btn btn-lg btn-ghost btn-full">취소</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────────────────── 14. BORDER RADIUS / SHADOW -->
+  <section class="section">
+    <h2 class="section-title">14 · Radius &amp; Shadow</h2>
+    <div class="grid-3">
+      <div>
+        <div class="label">Border Radius</div>
+        <div class="flex-col gap-3">
+          <div style="background:var(--primary-100);border-radius:4px;padding:12px;font-size:12px;font-family:monospace;color:var(--primary-700)">r-xs · 4px</div>
+          <div style="background:var(--primary-100);border-radius:8px;padding:12px;font-size:12px;font-family:monospace;color:var(--primary-700)">r-sm · 8px</div>
+          <div style="background:var(--primary-100);border-radius:12px;padding:12px;font-size:12px;font-family:monospace;color:var(--primary-700)">r-md · 12px</div>
+          <div style="background:var(--primary-100);border-radius:16px;padding:12px;font-size:12px;font-family:monospace;color:var(--primary-700)">r-lg · 16px</div>
+          <div style="background:var(--primary-100);border-radius:20px;padding:12px;font-size:12px;font-family:monospace;color:var(--primary-700)">r-xl · 20px</div>
+          <div style="background:var(--primary-100);border-radius:24px;padding:12px;font-size:12px;font-family:monospace;color:var(--primary-700)">r-2xl · 24px</div>
+          <div style="background:var(--primary-100);border-radius:9999px;padding:12px;font-size:12px;font-family:monospace;color:var(--primary-700)">r-full · pill</div>
+        </div>
+      </div>
+      <div>
+        <div class="label">Shadows</div>
+        <div class="flex-col gap-4">
+          <div style="background:white;border-radius:12px;padding:16px;box-shadow:0 1px 2px rgba(0,0,0,.06);font-size:12px;font-family:monospace;color:var(--gray-600)">shadow-xs</div>
+          <div style="background:white;border-radius:12px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,.08);font-size:12px;font-family:monospace;color:var(--gray-600)">shadow-sm</div>
+          <div style="background:white;border-radius:12px;padding:16px;box-shadow:0 4px 16px rgba(0,0,0,.10);font-size:12px;font-family:monospace;color:var(--gray-600)">shadow-md</div>
+          <div style="background:white;border-radius:12px;padding:16px;box-shadow:0 8px 32px rgba(0,0,0,.12);font-size:12px;font-family:monospace;color:var(--gray-600)">shadow-lg</div>
+          <div style="background:white;border-radius:12px;padding:16px;box-shadow:0 4px 20px rgba(11,76,134,.25);font-size:12px;font-family:monospace;color:var(--primary-700)">shadow-brand</div>
+        </div>
+      </div>
+      <div>
+        <div class="label">Role Color Surfaces</div>
+        <div class="flex-col gap-3">
+          <div style="background:var(--primary-700);border-radius:12px;padding:16px;color:white;font-size:13px;font-weight:600">브랜드 · #0b4c86</div>
+          <div style="background:var(--worker-50);border:1.5px solid var(--worker-300);border-radius:12px;padding:16px;color:var(--worker-600);font-size:13px;font-weight:600">알바생 · Amber</div>
+          <div style="background:var(--manager-50);border:1.5px solid var(--manager-300);border-radius:12px;padding:16px;color:var(--manager-600);font-size:13px;font-weight:600">사장님 · Teal</div>
+          <div style="background:var(--gray-900);border-radius:12px;padding:16px;color:white;font-size:13px;font-weight:600">온체인 · Dark</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div><!-- /page -->
+</body>
+</html>

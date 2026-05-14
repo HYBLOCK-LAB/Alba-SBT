@@ -1,0 +1,1115 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Worker Screens 1 · Alba-SBT</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;900&family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+    :root {
+      --primary-900: #061e36;
+      --primary-800: #0b3260;
+      --primary-700: #0b4c86;
+      --primary-600: #1160a4;
+      --primary-500: #1a78c8;
+      --primary-400: #4096d8;
+      --primary-300: #74b5e6;
+      --primary-200: #b0d4f1;
+      --primary-100: #dceef9;
+      --primary-50:  #f0f7fd;
+      --gray-900: #111827;
+      --gray-800: #1f2937;
+      --gray-700: #374151;
+      --gray-600: #4b5563;
+      --gray-500: #6b7280;
+      --gray-400: #9ca3af;
+      --gray-300: #d1d5db;
+      --gray-200: #e5e7eb;
+      --gray-100: #f3f4f6;
+      --gray-50:  #f9fafb;
+      --white: #ffffff;
+      --worker-600: #b45309;
+      --worker-400: #f59e0b;
+      --worker-100: #fef3c7;
+      --success-600: #16a34a;
+      --success-100: #dcfce7;
+      --font: 'Noto Sans KR', 'Inter', sans-serif;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font);
+      background: #0f172a;
+      min-height: 100vh;
+      padding: 48px 32px;
+    }
+
+    /* ── Page header ── */
+    .page-header {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+    .page-header h1 {
+      font-size: 13px;
+      font-weight: 600;
+      color: rgba(255,255,255,.35);
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .page-header p {
+      font-size: 22px;
+      font-weight: 700;
+      color: rgba(255,255,255,.85);
+    }
+
+    /* ── Screen grid ── */
+    .screens {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 32px;
+      max-width: 1360px;
+      margin: 0 auto;
+    }
+
+    .screen-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+    .screen-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: rgba(255,255,255,.35);
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      text-align: center;
+    }
+    .screen-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: rgba(255,255,255,.7);
+      text-align: center;
+      margin-top: 2px;
+    }
+
+    /* ── Phone frame ── */
+    .phone {
+      width: 300px;
+      background: var(--gray-50);
+      border-radius: 44px;
+      overflow: hidden;
+      box-shadow:
+        0 0 0 8px #1e293b,
+        0 0 0 10px #334155,
+        0 32px 64px rgba(0,0,0,.6);
+      position: relative;
+      flex-shrink: 0;
+    }
+    .phone-inner {
+      height: 620px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Status bar ── */
+    .status-bar {
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      flex-shrink: 0;
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .status-bar.light { background: var(--white); color: var(--gray-800); }
+    .status-bar.dark-bg { background: var(--primary-900); color: rgba(255,255,255,.9); }
+    .status-bar.transparent-bar { background: transparent; color: var(--white); position: absolute; top: 0; left: 0; right: 0; z-index: 10; }
+    .status-icons { display: flex; align-items: center; gap: 5px; }
+
+    /* ── Common ── */
+    .screen-content {
+      flex: 1;
+      background: var(--white);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .screen-scroll {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+    .screen-scroll::-webkit-scrollbar { display: none; }
+
+    /* ── Top bar ── */
+    .top-bar {
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      background: var(--white);
+      flex-shrink: 0;
+    }
+    .top-bar-title {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--gray-900);
+    }
+    .top-bar-sub {
+      font-size: 11px;
+      color: var(--gray-400);
+      font-family: 'Inter', sans-serif;
+    }
+    .top-bar-icon-btn {
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 10px;
+      background: transparent;
+      color: var(--gray-600);
+    }
+
+    /* ── Bottom tab bar ── */
+    .tab-bar {
+      height: 72px;
+      background: var(--white);
+      display: flex;
+      align-items: stretch;
+      border-top: 1px solid var(--gray-100);
+      flex-shrink: 0;
+    }
+    .tab-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      color: var(--gray-400);
+    }
+    .tab-item.active { color: var(--primary-700); }
+    .tab-item span {
+      font-size: 10px;
+      font-weight: 500;
+    }
+
+    /* ── Section header ── */
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px 8px;
+    }
+    .section-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--gray-800);
+    }
+    .section-link {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--primary-600);
+    }
+
+    /* ── Divider ── */
+    .divider {
+      height: 8px;
+      background: var(--gray-50);
+      flex-shrink: 0;
+    }
+
+    /* ── Badge ── */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 20px;
+      background: transparent;
+    }
+    .badge-pending {
+      border: 1px solid var(--gray-300);
+      color: var(--gray-500);
+    }
+    .badge-success {
+      border: 1px solid var(--success-600);
+      color: var(--success-600);
+    }
+    .badge-primary {
+      border: 1px solid var(--primary-400);
+      color: var(--primary-600);
+    }
+
+    /* ── W-1 HOME ── */
+    .store-card {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 20px;
+      cursor: pointer;
+    }
+    .store-card.disabled { opacity: .55; cursor: default; }
+    .store-icon-wrap {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: var(--primary-50);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .store-card-info { flex: 1; min-width: 0; }
+    .store-card-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--gray-900);
+    }
+    .store-card-sub {
+      font-size: 12px;
+      color: var(--gray-500);
+      margin-top: 2px;
+    }
+    .store-card-right {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    /* Level card */
+    .level-card {
+      margin: 0 20px 12px;
+      padding: 16px;
+      background: var(--primary-50);
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .level-card-left { display: flex; flex-direction: column; gap: 2px; }
+    .level-number {
+      font-size: 28px;
+      font-weight: 900;
+      color: var(--primary-700);
+      font-family: 'Inter', sans-serif;
+      line-height: 1;
+    }
+    .level-desc {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--primary-600);
+    }
+    .level-badges {
+      display: flex;
+      gap: 8px;
+    }
+    .level-badge-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--white);
+      border: 1px solid var(--primary-200);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Progress bars */
+    .progress-section { padding: 0 20px 16px; display: flex; flex-direction: column; gap: 10px; }
+    .progress-item { display: flex; flex-direction: column; gap: 5px; }
+    .progress-label-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .progress-label {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--gray-700);
+    }
+    .progress-pct {
+      font-size: 11px;
+      font-weight: 700;
+      font-family: 'Inter', sans-serif;
+    }
+    .progress-track {
+      height: 6px;
+      border-radius: 99px;
+      background: var(--gray-100);
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      border-radius: 99px;
+    }
+    .fill-primary { background: linear-gradient(90deg, var(--primary-500), var(--primary-300)); }
+    .fill-green { background: #22c55e; }
+    .fill-amber { background: var(--worker-400); }
+
+    /* Portfolio button */
+    .portfolio-btn {
+      margin: 4px 20px 16px;
+      padding: 13px 20px;
+      border-radius: 14px;
+      border: 1.5px solid var(--primary-200);
+      background: transparent;
+      color: var(--primary-700);
+      font-size: 14px;
+      font-weight: 600;
+      font-family: var(--font);
+      width: calc(100% - 40px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+    }
+
+    /* ── W-2 BOTTOM SHEET ── */
+    .overlay-bg {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,.5);
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+    }
+    .bottom-sheet {
+      background: var(--white);
+      border-radius: 28px 28px 0 0;
+      padding: 16px 24px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .sheet-handle {
+      width: 36px;
+      height: 4px;
+      border-radius: 99px;
+      background: var(--gray-200);
+      align-self: center;
+      margin-bottom: 4px;
+    }
+    .sheet-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--gray-900);
+      text-align: center;
+    }
+    .sheet-desc {
+      font-size: 13px;
+      color: var(--gray-500);
+      text-align: center;
+      line-height: 1.5;
+    }
+    .code-input {
+      width: 100%;
+      font-family: 'Inter', sans-serif;
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: 0.3em;
+      text-align: center;
+      color: var(--gray-900);
+      background: var(--gray-50);
+      border: 1.5px solid var(--gray-200);
+      border-radius: 14px;
+      padding: 16px 20px;
+      outline: none;
+    }
+    .code-input::placeholder { color: var(--gray-300); }
+    .sheet-hint {
+      font-size: 11px;
+      color: var(--gray-400);
+      text-align: center;
+      line-height: 1.5;
+    }
+    .btn-primary-full {
+      background: var(--primary-700);
+      color: var(--white);
+      font-family: var(--font);
+      font-size: 15px;
+      font-weight: 700;
+      border: none;
+      border-radius: 14px;
+      padding: 15px 20px;
+      width: 100%;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(11,76,134,.3);
+    }
+    .btn-cancel {
+      background: transparent;
+      border: none;
+      font-family: var(--font);
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--gray-400);
+      cursor: pointer;
+      text-align: center;
+      padding: 4px;
+    }
+
+    /* ── W-3 STORE LANDING ── */
+    .store-hero {
+      background: var(--primary-50);
+      padding: 16px 20px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .store-hero-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 16px;
+      background: var(--white);
+      border: 1px solid var(--primary-100);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .store-hero-cat {
+      font-size: 12px;
+      color: var(--gray-500);
+    }
+    .store-hero-addr {
+      font-size: 11px;
+      color: var(--gray-400);
+      text-align: center;
+    }
+
+    /* Inner tab bar */
+    .inner-tab-bar {
+      display: flex;
+      border-bottom: 1px solid var(--gray-100);
+      flex-shrink: 0;
+      background: var(--white);
+    }
+    .inner-tab {
+      flex: 1;
+      text-align: center;
+      padding: 11px 4px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--gray-400);
+      position: relative;
+    }
+    .inner-tab.active {
+      color: var(--primary-700);
+      font-weight: 700;
+    }
+    .inner-tab.active::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 16%;
+      right: 16%;
+      height: 2px;
+      background: var(--primary-700);
+      border-radius: 2px 2px 0 0;
+    }
+
+    /* QR scan tab content */
+    .qr-tab-content {
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .today-date {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--gray-600);
+      text-align: center;
+    }
+    .status-card {
+      background: var(--gray-50);
+      border-radius: 14px;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .status-card-label { font-size: 12px; color: var(--gray-500); margin-bottom: 3px; }
+    .status-card-value { font-size: 15px; font-weight: 700; color: var(--gray-900); }
+    .btn-qr-scan {
+      background: var(--primary-700);
+      color: var(--white);
+      font-family: var(--font);
+      font-size: 16px;
+      font-weight: 700;
+      border: none;
+      border-radius: 16px;
+      padding: 18px 20px;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      cursor: pointer;
+      box-shadow: 0 6px 20px rgba(11,76,134,.35);
+    }
+    .scan-hint {
+      font-size: 11px;
+      color: var(--gray-400);
+      text-align: center;
+      line-height: 1.5;
+    }
+
+    /* ── W-4 QR CAMERA ── */
+    .camera-screen {
+      flex: 1;
+      background: #0a0a0a;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+    .camera-top-bar {
+      position: absolute;
+      top: 44px;
+      left: 0;
+      right: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      z-index: 5;
+    }
+    .camera-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--white);
+    }
+    .camera-btn {
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--white);
+    }
+    .camera-viewfinder {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    .vf-frame {
+      width: 180px;
+      height: 180px;
+      position: relative;
+    }
+    .vf-corner {
+      position: absolute;
+      width: 28px;
+      height: 28px;
+    }
+    .vf-corner.tl { top: 0; left: 0; border-top: 3px solid #fff; border-left: 3px solid #fff; border-radius: 4px 0 0 0; }
+    .vf-corner.tr { top: 0; right: 0; border-top: 3px solid #fff; border-right: 3px solid #fff; border-radius: 0 4px 0 0; }
+    .vf-corner.bl { bottom: 0; left: 0; border-bottom: 3px solid #fff; border-left: 3px solid #fff; border-radius: 0 0 0 4px; }
+    .vf-corner.br { bottom: 0; right: 0; border-bottom: 3px solid #fff; border-right: 3px solid #fff; border-radius: 0 0 4px 0; }
+    .scan-line {
+      position: absolute;
+      left: 4px;
+      right: 4px;
+      top: 50%;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--primary-400), transparent);
+      border-radius: 1px;
+    }
+    .camera-bottom {
+      background: var(--white);
+      border-radius: 24px 24px 0 0;
+      padding: 16px 20px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+    .camera-toggle {
+      display: flex;
+      background: var(--gray-100);
+      border-radius: 10px;
+      padding: 3px;
+    }
+    .toggle-item {
+      flex: 1;
+      padding: 8px 4px;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--gray-400);
+      border-radius: 8px;
+    }
+    .toggle-item.active {
+      background: var(--white);
+      color: var(--primary-700);
+      box-shadow: 0 1px 4px rgba(0,0,0,.08);
+    }
+    .camera-hint {
+      font-size: 12px;
+      color: var(--gray-600);
+      text-align: center;
+      font-weight: 500;
+    }
+    .location-box {
+      background: var(--primary-50);
+      border-radius: 10px;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .location-box-text {
+      font-size: 11px;
+      color: var(--primary-600);
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>Alba-SBT · Worker Screens</h1>
+  <p>알바생 화면 1 — 홈 / 매장 연결 / 매장 랜딩 / QR 스캔</p>
+</div>
+
+<div class="screens">
+
+  <!-- ══════════════════════════════════
+       W-1  알바생 홈
+  ══════════════════════════════════ -->
+  <div class="screen-wrap">
+    <div class="screen-label">W-1</div>
+    <div class="screen-name">알바생 홈</div>
+    <div class="phone">
+      <div class="phone-inner">
+        <!-- Status bar -->
+        <div class="status-bar light">
+          <span style="font-family:'Inter',sans-serif;font-size:12px;font-weight:600;">9:41</span>
+          <div class="status-icons">
+            <!-- signal -->
+            <svg width="16" height="12" viewBox="0 0 16 12" fill="none">
+              <rect x="0" y="6" width="3" height="6" rx="1" fill="currentColor" opacity=".4"/>
+              <rect x="4" y="4" width="3" height="8" rx="1" fill="currentColor" opacity=".6"/>
+              <rect x="8" y="2" width="3" height="10" rx="1" fill="currentColor" opacity=".8"/>
+              <rect x="12" y="0" width="3" height="12" rx="1" fill="currentColor"/>
+            </svg>
+            <!-- wifi -->
+            <svg width="16" height="12" viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+              <path d="M1 4c1.9-1.9 4.4-3 7-3s5.1 1.1 7 3"/>
+              <path d="M3.5 6.5c1.2-1.2 2.8-1.9 4.5-1.9s3.3.7 4.5 1.9"/>
+              <circle cx="8" cy="10" r="1.5" fill="currentColor" stroke="none"/>
+            </svg>
+            <!-- battery -->
+            <svg width="22" height="12" viewBox="0 0 22 12" fill="none">
+              <rect x="0.5" y="0.5" width="18" height="11" rx="3" stroke="currentColor" stroke-opacity=".35"/>
+              <rect x="2" y="2" width="14" height="8" rx="2" fill="currentColor"/>
+              <path d="M20 4v4a2 2 0 000-4z" fill="currentColor" opacity=".4"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Top bar -->
+        <div class="top-bar">
+          <span class="top-bar-title">홈</span>
+          <span class="top-bar-sub" style="font-family:'Inter',sans-serif;">0x3f2a...8c14</span>
+        </div>
+
+        <!-- Content -->
+        <div class="screen-content">
+          <div class="screen-scroll">
+            <!-- 내 매장 section -->
+            <div class="section-header">
+              <span class="section-title">내 매장</span>
+              <span class="section-link">+ 매장 연결</span>
+            </div>
+
+            <!-- Store card 1 – active -->
+            <div class="store-card">
+              <div class="store-icon-wrap">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--primary-600)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 9l1.5-6h15L21 9"/>
+                  <path d="M3 9h18v11a1 1 0 01-1 1H4a1 1 0 01-1-1V9z"/>
+                  <path d="M9 21V12h6v9"/>
+                </svg>
+              </div>
+              <div class="store-card-info">
+                <div class="store-card-name">맥도날드 신촌점</div>
+                <div class="store-card-sub">외식 · 패스트푸드</div>
+              </div>
+              <div class="store-card-right">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gray-300)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M9 18l6-6-6-6"/>
+                </svg>
+              </div>
+            </div>
+
+            <!-- Store card 2 – pending -->
+            <div class="store-card disabled">
+              <div class="store-icon-wrap" style="background:var(--gray-100);">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--gray-400)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 9l1.5-6h15L21 9"/>
+                  <path d="M3 9h18v11a1 1 0 01-1 1H4a1 1 0 01-1-1V9z"/>
+                  <path d="M9 21V12h6v9"/>
+                </svg>
+              </div>
+              <div class="store-card-info">
+                <div class="store-card-name" style="color:var(--gray-500);">스타벅스 강남점</div>
+                <div class="store-card-sub" style="margin-top:4px;">
+                  <span class="badge badge-pending">승인 대기</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- 경력 프로필 section -->
+            <div class="section-header">
+              <span class="section-title">경력 프로필</span>
+            </div>
+
+            <!-- Level card -->
+            <div class="level-card">
+              <div class="level-card-left">
+                <div class="level-number">Lv.2</div>
+                <div class="level-desc">성실 알바생</div>
+              </div>
+              <div class="level-badges">
+                <div class="level-badge-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--worker-400)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14l-5-4.87 6.91-1.01L12 2z"/>
+                  </svg>
+                </div>
+                <div class="level-badge-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--primary-500)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            <!-- Progress bars -->
+            <div class="progress-section">
+              <div class="progress-item">
+                <div class="progress-label-row">
+                  <span class="progress-label">6개월 근속</span>
+                  <span class="progress-pct" style="color:var(--primary-600);">79%</span>
+                </div>
+                <div class="progress-track">
+                  <div class="progress-fill fill-primary" style="width:79%;"></div>
+                </div>
+              </div>
+              <div class="progress-item">
+                <div class="progress-label-row">
+                  <span class="progress-label">성실 인증</span>
+                  <span class="progress-pct" style="color:#16a34a;">33%</span>
+                </div>
+                <div class="progress-track">
+                  <div class="progress-fill fill-green" style="width:33%;"></div>
+                </div>
+              </div>
+              <div class="progress-item">
+                <div class="progress-label-row">
+                  <span class="progress-label">추가 근무 수락</span>
+                  <span class="progress-pct" style="color:var(--worker-600);">80%</span>
+                </div>
+                <div class="progress-track">
+                  <div class="progress-fill fill-amber" style="width:80%;"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Portfolio button -->
+            <button class="portfolio-btn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                <path d="M9 3v18M3 9h6M3 15h6"/>
+                <rect x="9" y="9" width="6" height="6" fill="currentColor" opacity=".3"/>
+              </svg>
+              포트폴리오 QR 공유
+            </button>
+          </div>
+        </div>
+
+        <!-- Bottom tab bar -->
+        <div class="tab-bar">
+          <div class="tab-item active">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/>
+              <path d="M9 21V12h6v9"/>
+            </svg>
+            <span>홈</span>
+          </div>
+          <div class="tab-item">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
+              <circle cx="12" cy="13" r="4"/>
+            </svg>
+            <span>QR 스캔</span>
+          </div>
+          <div class="tab-item">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2"/>
+              <path d="M16 2v4M8 2v4M3 10h18"/>
+            </svg>
+            <span>근태</span>
+          </div>
+          <div class="tab-item">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M12 8v4M12 16h.01"/>
+              <path d="M12 8v8M8 12h8"/>
+            </svg>
+            <span>추가근무</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════
+       W-2  매장 연결 Bottom Sheet
+  ══════════════════════════════════ -->
+  <div class="screen-wrap">
+    <div class="screen-label">W-2</div>
+    <div class="screen-name">매장 연결</div>
+    <div class="phone">
+      <div class="phone-inner" style="position:relative;">
+        <!-- bg home screen (dimmed) -->
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;filter:blur(1px) brightness(.4);pointer-events:none;z-index:1;">
+          <div class="status-bar light">
+            <span style="font-family:'Inter',sans-serif;font-size:12px;font-weight:600;">9:41</span>
+          </div>
+          <div class="top-bar"><span class="top-bar-title">홈</span></div>
+          <div style="flex:1;background:var(--white);padding:20px;">
+            <div style="height:14px;background:var(--gray-100);border-radius:6px;margin-bottom:12px;width:60%;"></div>
+            <div style="height:56px;background:var(--gray-50);border-radius:12px;margin-bottom:8px;"></div>
+            <div style="height:56px;background:var(--gray-50);border-radius:12px;margin-bottom:16px;"></div>
+            <div style="height:14px;background:var(--gray-100);border-radius:6px;margin-bottom:12px;width:50%;"></div>
+            <div style="height:80px;background:var(--primary-50);border-radius:16px;margin-bottom:12px;"></div>
+            <div style="height:60px;background:var(--gray-50);border-radius:12px;"></div>
+          </div>
+        </div>
+
+        <!-- overlay -->
+        <div class="overlay-bg" style="z-index:2;">
+          <div class="bottom-sheet">
+            <div class="sheet-handle"></div>
+            <div class="sheet-title">매장 연결하기</div>
+            <div class="sheet-desc">사장님에게 받은 6자리 코드를 입력하세요</div>
+            <input class="code-input" type="text" placeholder="000000" maxlength="6" />
+            <div class="sheet-hint">코드는 사장님 앱 → 매장 관리 → 인사 관리에서<br>확인할 수 있어요</div>
+            <button class="btn-primary-full">연결 요청 보내기</button>
+            <button class="btn-cancel">취소</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════
+       W-3  매장 랜딩
+  ══════════════════════════════════ -->
+  <div class="screen-wrap">
+    <div class="screen-label">W-3</div>
+    <div class="screen-name">매장 랜딩</div>
+    <div class="phone">
+      <div class="phone-inner">
+        <!-- Status bar -->
+        <div class="status-bar light">
+          <span style="font-family:'Inter',sans-serif;font-size:12px;font-weight:600;">9:41</span>
+          <div class="status-icons">
+            <svg width="16" height="12" viewBox="0 0 16 12" fill="none"><rect x="0" y="6" width="3" height="6" rx="1" fill="currentColor" opacity=".4"/><rect x="4" y="4" width="3" height="8" rx="1" fill="currentColor" opacity=".6"/><rect x="8" y="2" width="3" height="10" rx="1" fill="currentColor" opacity=".8"/><rect x="12" y="0" width="3" height="12" rx="1" fill="currentColor"/></svg>
+            <svg width="22" height="12" viewBox="0 0 22 12" fill="none"><rect x="0.5" y="0.5" width="18" height="11" rx="3" stroke="currentColor" stroke-opacity=".35"/><rect x="2" y="2" width="14" height="8" rx="2" fill="currentColor"/><path d="M20 4v4a2 2 0 000-4z" fill="currentColor" opacity=".4"/></svg>
+          </div>
+        </div>
+
+        <!-- Top bar -->
+        <div class="top-bar">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--gray-600)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M19 12H5M12 5l-7 7 7 7"/>
+            </svg>
+            <span class="top-bar-title" style="font-size:15px;">맥도날드 신촌점</span>
+          </div>
+          <div class="top-bar-icon-btn">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--gray-500)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="5" r="1.5" fill="currentColor" stroke="none"/>
+              <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/>
+              <circle cx="12" cy="19" r="1.5" fill="currentColor" stroke="none"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Store hero -->
+        <div class="store-hero">
+          <div class="store-hero-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--primary-600)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 9l1.5-6h15L21 9"/>
+              <path d="M3 9h18v11a1 1 0 01-1 1H4a1 1 0 01-1-1V9z"/>
+              <path d="M9 21V12h6v9"/>
+            </svg>
+          </div>
+          <div class="store-hero-cat">외식 · 패스트푸드</div>
+          <div class="store-hero-addr">서울 서대문구 신촌로 83</div>
+          <span class="badge badge-success">재직 중</span>
+        </div>
+
+        <!-- Inner tab bar -->
+        <div class="inner-tab-bar">
+          <div class="inner-tab active">QR 스캔</div>
+          <div class="inner-tab">근태 관리</div>
+          <div class="inner-tab">추가 근무</div>
+        </div>
+
+        <!-- Tab content -->
+        <div class="screen-content">
+          <div class="screen-scroll">
+            <div class="qr-tab-content">
+              <div class="today-date">2026년 5월 6일 (수)</div>
+
+              <!-- Status card -->
+              <div class="status-card">
+                <div>
+                  <div class="status-card-label">현재 상태</div>
+                  <div class="status-card-value">미출근</div>
+                </div>
+                <div style="text-align:right;">
+                  <div class="status-card-label">출근 예정</div>
+                  <div class="status-card-value">오전 09:00</div>
+                </div>
+              </div>
+
+              <!-- QR Scan button -->
+              <button class="btn-qr-scan">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
+                  <circle cx="12" cy="13" r="4"/>
+                </svg>
+                출근 QR 스캔
+              </button>
+
+              <!-- Hint -->
+              <div class="scan-hint">매장 QR을 스캔하면 GPS 위치도 자동 검증됩니다</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bottom tab bar -->
+        <div class="tab-bar">
+          <div class="tab-item">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg>
+            <span>홈</span>
+          </div>
+          <div class="tab-item active">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            <span>QR 스캔</span>
+          </div>
+          <div class="tab-item">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+            <span>근태</span>
+          </div>
+          <div class="tab-item">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12h8M12 8v8"/></svg>
+            <span>추가근무</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════
+       W-4  QR 스캔 (카메라 뷰)
+  ══════════════════════════════════ -->
+  <div class="screen-wrap">
+    <div class="screen-label">W-4</div>
+    <div class="screen-name">QR 스캔 카메라</div>
+    <div class="phone">
+      <div class="phone-inner" style="position:relative;">
+        <!-- Status bar transparent -->
+        <div class="status-bar transparent-bar">
+          <span style="font-family:'Inter',sans-serif;font-size:12px;font-weight:600;">9:41</span>
+          <div class="status-icons" style="color:#fff;">
+            <svg width="16" height="12" viewBox="0 0 16 12" fill="none"><rect x="0" y="6" width="3" height="6" rx="1" fill="white" opacity=".6"/><rect x="4" y="4" width="3" height="8" rx="1" fill="white" opacity=".7"/><rect x="8" y="2" width="3" height="10" rx="1" fill="white" opacity=".85"/><rect x="12" y="0" width="3" height="12" rx="1" fill="white"/></svg>
+            <svg width="22" height="12" viewBox="0 0 22 12" fill="none"><rect x="0.5" y="0.5" width="18" height="11" rx="3" stroke="white" stroke-opacity=".5"/><rect x="2" y="2" width="12" height="8" rx="2" fill="white"/><path d="M20 4v4a2 2 0 000-4z" fill="white" opacity=".4"/></svg>
+          </div>
+        </div>
+
+        <!-- Camera screen -->
+        <div class="camera-screen">
+          <!-- Top bar -->
+          <div class="camera-top-bar">
+            <div class="camera-btn">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 6L6 18M6 6l12 12"/>
+              </svg>
+            </div>
+            <span class="camera-title">QR 스캔</span>
+            <div class="camera-btn"></div>
+          </div>
+
+          <!-- Viewfinder -->
+          <div class="camera-viewfinder">
+            <!-- Dark overlay around vf -->
+            <div style="position:absolute;inset:0;background:rgba(0,0,0,.55);"></div>
+            <div class="vf-frame" style="z-index:2;position:relative;">
+              <div class="vf-corner tl"></div>
+              <div class="vf-corner tr"></div>
+              <div class="vf-corner bl"></div>
+              <div class="vf-corner br"></div>
+              <!-- simulated qr pixels -->
+              <div style="position:absolute;inset:12px;display:grid;grid-template-columns:repeat(10,1fr);gap:2px;opacity:.12;">
+                <div style="background:#fff;"></div><div style="background:#fff;"></div><div style="background:#fff;"></div><div></div><div style="background:#fff;"></div><div></div><div style="background:#fff;"></div><div style="background:#fff;"></div><div></div><div style="background:#fff;"></div>
+                <div style="background:#fff;"></div><div></div><div style="background:#fff;"></div><div></div><div></div><div style="background:#fff;"></div><div></div><div style="background:#fff;"></div><div></div><div style="background:#fff;"></div>
+                <div></div><div style="background:#fff;"></div><div style="background:#fff;"></div><div style="background:#fff;"></div><div></div><div style="background:#fff;"></div><div style="background:#fff;"></div><div></div><div style="background:#fff;"></div><div></div>
+                <div style="background:#fff;"></div><div></div><div></div><div style="background:#fff;"></div><div style="background:#fff;"></div><div></div><div></div><div style="background:#fff;"></div><div style="background:#fff;"></div><div></div>
+                <div style="background:#fff;"></div><div style="background:#fff;"></div><div></div><div style="background:#fff;"></div><div></div><div style="background:#fff;"></div><div></div><div></div><div style="background:#fff;"></div><div style="background:#fff;"></div>
+                <div></div><div style="background:#fff;"></div><div style="background:#fff;"></div><div></div><div style="background:#fff;"></div><div></div><div style="background:#fff;"></div><div></div><div style="background:#fff;"></div><div></div>
+                <div style="background:#fff;"></div><div></div><div></div><div style="background:#fff;"></div><div style="background:#fff;"></div><div style="background:#fff;"></div><div></div><div style="background:#fff;"></div><div></div><div style="background:#fff;"></div>
+                <div></div><div style="background:#fff;"></div><div style="background:#fff;"></div><div></div><div></div><div style="background:#fff;"></div><div style="background:#fff;"></div><div></div><div style="background:#fff;"></div><div></div>
+                <div style="background:#fff;"></div><div style="background:#fff;"></div><div></div><div style="background:#fff;"></div><div></div><div></div><div style="background:#fff;"></div><div style="background:#fff;"></div><div></div><div style="background:#fff;"></div>
+                <div></div><div></div><div style="background:#fff;"></div><div></div><div style="background:#fff;"></div><div style="background:#fff;"></div><div></div><div></div><div style="background:#fff;"></div><div style="background:#fff;"></div>
+              </div>
+              <div class="scan-line"></div>
+            </div>
+          </div>
+
+          <!-- Bottom panel -->
+          <div class="camera-bottom">
+            <!-- Toggle -->
+            <div class="camera-toggle">
+              <div class="toggle-item active">출근</div>
+              <div class="toggle-item">퇴근</div>
+            </div>
+            <div class="camera-hint">맥도날드 신촌점 QR 코드를 스캔해 주세요</div>
+            <div class="location-box">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--primary-500)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/>
+                <circle cx="12" cy="10" r="3"/>
+              </svg>
+              <span class="location-box-text">현재 위치 확인 중...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

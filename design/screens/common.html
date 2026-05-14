@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Common Screens · Alba-SBT</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;900&family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+    :root {
+      --primary-900: #061e36;
+      --primary-800: #0b3260;
+      --primary-700: #0b4c86;
+      --primary-600: #1160a4;
+      --primary-500: #1a78c8;
+      --primary-400: #4096d8;
+      --primary-300: #74b5e6;
+      --primary-200: #b0d4f1;
+      --primary-100: #dceef9;
+      --primary-50:  #f0f7fd;
+      --gray-900: #111827;
+      --gray-800: #1f2937;
+      --gray-700: #374151;
+      --gray-600: #4b5563;
+      --gray-500: #6b7280;
+      --gray-400: #9ca3af;
+      --gray-300: #d1d5db;
+      --gray-200: #e5e7eb;
+      --gray-100: #f3f4f6;
+      --gray-50:  #f9fafb;
+      --white: #ffffff;
+      --worker-600: #b45309;
+      --worker-400: #f59e0b;
+      --worker-100: #fef3c7;
+      --font: 'Noto Sans KR', 'Inter', sans-serif;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font);
+      background: #0f172a;
+      min-height: 100vh;
+      padding: 48px 32px;
+    }
+
+    /* ── Page header ── */
+    .page-header {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+    .page-header h1 {
+      font-size: 13px;
+      font-weight: 600;
+      color: rgba(255,255,255,.35);
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .page-header p {
+      font-size: 22px;
+      font-weight: 700;
+      color: rgba(255,255,255,.85);
+    }
+
+    /* ── Screen grid ── */
+    .screens {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 32px;
+      max-width: 1360px;
+      margin: 0 auto;
+    }
+
+    .screen-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+    .screen-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: rgba(255,255,255,.35);
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      text-align: center;
+    }
+    .screen-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: rgba(255,255,255,.7);
+      text-align: center;
+      margin-top: 2px;
+    }
+
+    /* ── Phone frame ── */
+    .phone {
+      width: 300px;
+      background: var(--gray-50);
+      border-radius: 44px;
+      overflow: hidden;
+      box-shadow:
+        0 0 0 8px #1e293b,
+        0 0 0 10px #334155,
+        0 32px 64px rgba(0,0,0,.6);
+      position: relative;
+      flex-shrink: 0;
+    }
+    .phone-inner {
+      height: 620px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Status bar ── */
+    .status-bar {
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      flex-shrink: 0;
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .status-bar.dark { background: var(--primary-900); color: rgba(255,255,255,.9); }
+    .status-bar.light { background: var(--white); color: var(--gray-800); }
+    .status-bar.transparent { background: transparent; color: var(--white); position: absolute; top: 0; left: 0; right: 0; z-index: 10; }
+    .status-icons { display: flex; align-items: center; gap: 5px; }
+
+    /* ── Shared components ── */
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-family: var(--font);
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      transition: all .15s;
+      white-space: nowrap;
+      line-height: 1;
+      border-radius: 14px;
+    }
+    .btn-primary {
+      background: var(--primary-700);
+      color: var(--white);
+      box-shadow: 0 4px 16px rgba(11,76,134,.35);
+    }
+    .btn-ghost {
+      background: transparent;
+      color: var(--primary-700);
+      border: 1.5px solid var(--primary-200);
+    }
+    .btn-lg { font-size: 15px; padding: 16px 24px; width: 100%; }
+    .btn-sm { font-size: 13px; padding: 11px 20px; }
+
+    .input {
+      width: 100%;
+      font-family: var(--font);
+      font-size: 15px;
+      color: var(--gray-900);
+      background: var(--white);
+      border: 1.5px solid var(--gray-200);
+      border-radius: 12px;
+      padding: 14px 16px;
+      outline: none;
+    }
+    .input::placeholder { color: var(--gray-400); }
+    .input:focus { border-color: var(--primary-500); }
+    .input-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--gray-500);
+      margin-bottom: 6px;
+      display: block;
+    }
+    .input-group { display: flex; flex-direction: column; gap: 4px; }
+
+    /* ─────────────────────────────────────────────────────────
+       C-1  SPLASH
+    ───────────────────────────────────────────────────────── */
+    .splash {
+      flex: 1;
+      background: var(--primary-900);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      position: relative;
+      overflow: hidden;
+    }
+    .splash-bg-circle {
+      position: absolute;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(11,76,134,.6) 0%, transparent 70%);
+    }
+    .splash-logo-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      position: relative;
+      z-index: 1;
+    }
+    .splash-icon {
+      width: 76px;
+      height: 76px;
+      background: var(--primary-700);
+      border-radius: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 32px rgba(11,76,134,.6);
+    }
+    .splash-app-name {
+      font-family: 'Inter', sans-serif;
+      font-size: 28px;
+      font-weight: 900;
+      color: var(--white);
+      letter-spacing: -.02em;
+    }
+    .splash-tagline {
+      font-size: 12px;
+      color: rgba(255,255,255,.4);
+      font-weight: 400;
+      letter-spacing: .04em;
+      margin-top: -8px;
+    }
+    .splash-loading {
+      position: absolute;
+      bottom: 52px;
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+    .splash-dot {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.2);
+    }
+    .splash-dot.active {
+      background: var(--primary-400);
+      width: 16px;
+      border-radius: 2px;
+    }
+
+    /* ─────────────────────────────────────────────────────────
+       C-2  WALLET
+    ───────────────────────────────────────────────────────── */
+    .screen-content {
+      flex: 1;
+      background: var(--white);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .screen-scroll {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+    .screen-scroll::-webkit-scrollbar { display: none; }
+
+    .wallet-hero {
+      background: var(--primary-900);
+      padding: 40px 28px 36px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .wallet-hero-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      background: rgba(255,255,255,.08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .wallet-hero h2 {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--white);
+      line-height: 1.2;
+      letter-spacing: -.02em;
+    }
+    .wallet-hero p {
+      font-size: 13px;
+      color: rgba(255,255,255,.45);
+      line-height: 1.6;
+    }
+
+    .wallet-body { padding: 24px 20px; display: flex; flex-direction: column; gap: 12px; }
+
+    .wallet-option {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 16px;
+      border: 1.5px solid var(--gray-200);
+      border-radius: 16px;
+      background: var(--white);
+      cursor: pointer;
+      transition: all .15s;
+    }
+    .wallet-option:hover { border-color: var(--primary-300); background: var(--primary-50); }
+    .wallet-option-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .wallet-option-info { flex: 1; }
+    .wallet-option-name { font-size: 15px; font-weight: 700; color: var(--gray-900); }
+    .wallet-option-desc { font-size: 11px; color: var(--gray-400); margin-top: 2px; }
+    .wallet-option-arrow {
+      color: var(--gray-300);
+    }
+
+    .wallet-notice {
+      margin: 0 20px;
+      padding: 12px 14px;
+      background: var(--gray-50);
+      border-radius: 10px;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+    .wallet-notice-bar {
+      width: 3px;
+      background: var(--primary-300);
+      border-radius: 2px;
+      align-self: stretch;
+      flex-shrink: 0;
+    }
+    .wallet-notice p {
+      font-size: 11px;
+      color: var(--gray-500);
+      line-height: 1.6;
+    }
+
+    /* ─────────────────────────────────────────────────────────
+       C-3  ACCOUNT TYPE SELECT
+    ───────────────────────────────────────────────────────── */
+    .select-header {
+      padding: 40px 24px 20px;
+    }
+    .select-step {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--primary-500);
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .select-header h2 {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--gray-900);
+      line-height: 1.25;
+      letter-spacing: -.02em;
+    }
+    .select-header p {
+      font-size: 13px;
+      color: var(--gray-400);
+      margin-top: 8px;
+      line-height: 1.6;
+    }
+
+    .type-cards {
+      padding: 8px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .type-card {
+      border: 1.5px solid var(--gray-200);
+      border-radius: 18px;
+      padding: 20px;
+      cursor: pointer;
+      transition: all .18s;
+      position: relative;
+      overflow: hidden;
+    }
+    .type-card:hover { border-color: var(--primary-400); }
+    .type-card.selected { border-color: var(--primary-700); background: var(--primary-50); }
+
+    .type-card-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 12px;
+    }
+    .type-card-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .type-card-title {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--gray-900);
+    }
+    .type-card-sub {
+      font-size: 11px;
+      color: var(--gray-400);
+      margin-top: 1px;
+    }
+    .type-card-desc {
+      font-size: 12px;
+      color: var(--gray-500);
+      line-height: 1.6;
+    }
+    .type-card-features {
+      margin-top: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .type-card-feature {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--gray-600);
+    }
+    .feature-check {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--primary-100);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .type-card.selected .feature-check { background: var(--primary-700); }
+
+    .select-footer {
+      padding: 16px 20px 32px;
+    }
+    .select-warning {
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+      padding: 11px 13px;
+      border-radius: 10px;
+      border: 1px solid var(--gray-200);
+      margin-bottom: 14px;
+    }
+    .select-warning p {
+      font-size: 11px;
+      color: var(--gray-500);
+      line-height: 1.5;
+    }
+
+    /* ─────────────────────────────────────────────────────────
+       C-4  PROFILE INPUT
+    ───────────────────────────────────────────────────────── */
+    .profile-header {
+      padding: 36px 24px 20px;
+    }
+    .profile-step-bar {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-bottom: 20px;
+    }
+    .step-seg {
+      height: 3px;
+      flex: 1;
+      border-radius: 2px;
+      background: var(--gray-200);
+    }
+    .step-seg.done { background: var(--primary-700); }
+    .step-seg.active { background: var(--primary-400); }
+
+    .profile-header h2 {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--gray-900);
+      letter-spacing: -.02em;
+      margin-bottom: 6px;
+    }
+    .profile-header p {
+      font-size: 13px;
+      color: var(--gray-400);
+      line-height: 1.6;
+    }
+
+    .profile-form {
+      padding: 4px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .required-star { color: #ef4444; margin-left: 2px; }
+
+    .wallet-addr-box {
+      background: var(--gray-50);
+      border: 1.5px solid var(--gray-200);
+      border-radius: 12px;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .wallet-addr-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #22c55e;
+      flex-shrink: 0;
+    }
+    .wallet-addr-text {
+      font-family: 'Inter', monospace;
+      font-size: 12px;
+      color: var(--gray-500);
+      font-weight: 500;
+    }
+    .wallet-addr-label {
+      font-size: 10px;
+      color: var(--gray-400);
+      margin-left: auto;
+      font-weight: 500;
+    }
+
+    .profile-footer {
+      padding: 16px 20px 32px;
+      margin-top: auto;
+    }
+    .profile-skip {
+      text-align: center;
+      font-size: 13px;
+      color: var(--gray-400);
+      margin-top: 12px;
+      cursor: pointer;
+    }
+    .profile-skip span {
+      color: var(--primary-600);
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>Alba-SBT · Common Screens</h1>
+  <p>공통 화면 · C-1 ~ C-4</p>
+</div>
+
+<div class="screens">
+
+  <!-- ══════════════════════════════════════════ C-1 SPLASH -->
+  <div class="screen-wrap">
+    <div class="screen-label">C-1</div>
+    <div class="screen-name">스플래시</div>
+    <div class="phone">
+      <div class="phone-inner">
+
+        <div class="status-bar transparent">
+          <span>9:41</span>
+          <div class="status-icons">
+            <svg width="16" height="12" viewBox="0 0 16 12" fill="rgba(255,255,255,.9)"><rect x="0" y="3" width="3" height="9" rx="1"/><rect x="4.5" y="2" width="3" height="10" rx="1"/><rect x="9" y="0" width="3" height="12" rx="1"/><rect x="13.5" y="1" width="2.5" height="10" rx="1" opacity=".3"/></svg>
+            <svg width="14" height="12" viewBox="0 0 14 12" fill="none" stroke="rgba(255,255,255,.9)" stroke-width="1.5"><path d="M7 3C4.5 3 2.3 4.1 1 6c2.4 2.5 8.6 2.5 12 0-1.3-1.9-3.5-3-6-3z" opacity=".3"/><path d="M7 5C5.3 5 3.8 5.7 2.8 6.8 4 8.2 5.9 9 7 9s3-0.8 4.2-2.2C10.2 5.7 8.7 5 7 5z" opacity=".6"/><circle cx="7" cy="9.5" r="1" fill="rgba(255,255,255,.9)" stroke="none"/></svg>
+            <svg width="24" height="12" viewBox="0 0 24 12" fill="none"><rect x="0.5" y="0.5" width="20" height="11" rx="3.5" stroke="rgba(255,255,255,.35)"/><rect x="2" y="2" width="15" height="8" rx="2" fill="rgba(255,255,255,.9)"/><path d="M22 4v4a2 2 0 000-4z" fill="rgba(255,255,255,.4)"/></svg>
+          </div>
+        </div>
+
+        <div class="splash">
+          <div class="splash-bg-circle" style="width:400px;height:400px;top:-100px;left:-80px;opacity:.5"></div>
+          <div class="splash-bg-circle" style="width:300px;height:300px;bottom:-60px;right:-60px;opacity:.3"></div>
+
+          <div class="splash-logo-wrap">
+            <div class="splash-icon">
+              <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+                <rect x="6" y="18" width="28" height="16" rx="3" fill="rgba(255,255,255,.15)" stroke="rgba(255,255,255,.4)" stroke-width="1.5"/>
+                <path d="M13 18V13a7 7 0 0114 0v5" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+                <circle cx="20" cy="26" r="2.5" fill="white"/>
+                <path d="M20 28.5V31" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+                <circle cx="29" cy="10" r="5" fill="var(--primary-500)"/>
+                <path d="M27 10l1.5 1.5L31.5 8" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <div style="text-align:center">
+              <div class="splash-app-name">Alba-SBT</div>
+              <div class="splash-tagline">블록체인 알바 경력 증명</div>
+            </div>
+          </div>
+
+          <div class="splash-loading">
+            <div class="splash-dot active"></div>
+            <div class="splash-dot"></div>
+            <div class="splash-dot"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════ C-2 WALLET -->
+  <div class="screen-wrap">
+    <div class="screen-label">C-2</div>
+    <div class="screen-name">지갑 연동</div>
+    <div class="phone">
+      <div class="phone-inner">
+
+        <div class="status-bar dark">
+          <span>9:41</span>
+          <div class="status-icons">
+            <svg width="16" height="12" viewBox="0 0 16 12" fill="rgba(255,255,255,.8)"><rect x="0" y="3" width="3" height="9" rx="1"/><rect x="4.5" y="2" width="3" height="10" rx="1"/><rect x="9" y="0" width="3" height="12" rx="1"/><rect x="13.5" y="1" width="2.5" height="10" rx="1" opacity=".3"/></svg>
+            <svg width="24" height="12" viewBox="0 0 24 12" fill="none"><rect x="0.5" y="0.5" width="20" height="11" rx="3.5" stroke="rgba(255,255,255,.35)"/><rect x="2" y="2" width="15" height="8" rx="2" fill="rgba(255,255,255,.85)"/><path d="M22 4v4a2 2 0 000-4z" fill="rgba(255,255,255,.4)"/></svg>
+          </div>
+        </div>
+
+        <div class="screen-content">
+          <div class="wallet-hero">
+            <div class="wallet-hero-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 7H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/>
+                <path d="M16 3H8L4 7h16l-4-4z" opacity=".5"/>
+                <circle cx="17" cy="13" r="1.5" fill="rgba(255,255,255,.7)" stroke="none"/>
+              </svg>
+            </div>
+            <h2>지갑을 연결해<br/>시작하세요</h2>
+            <p>지갑 주소로 로그인합니다.<br/>별도의 회원가입이 필요 없습니다.</p>
+          </div>
+
+          <div class="screen-scroll">
+            <div class="wallet-body">
+              <!-- MetaMask -->
+              <div class="wallet-option">
+                <div class="wallet-option-icon" style="background:#fff7ed">
+                  <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+                    <path d="M24.5 3.5L15.75 10l1.634-3.843L24.5 3.5z" fill="#e17726" stroke="#e17726" stroke-width=".3"/>
+                    <path d="M3.5 3.5l8.681 6.557L10.616 6.157 3.5 3.5z" fill="#e27625" stroke="#e27625" stroke-width=".3"/>
+                    <path d="M21.459 18.305l-2.334 3.57 4.994 1.373 1.432-4.866-4.092-.077z" fill="#e27625" stroke="#e27625" stroke-width=".3"/>
+                    <path d="M2.457 18.382l1.424 4.866 4.987-1.373-2.327-3.57-4.084.077z" fill="#e27625" stroke="#e27625" stroke-width=".3"/>
+                    <path d="M8.603 12.257l-1.39 2.1 4.952.224-.168-5.327-3.394 3.003z" fill="#e27625" stroke="#e27625" stroke-width=".3"/>
+                    <path d="M19.397 12.257l-3.451-3.066-.112 5.39 4.952-.224-1.389-2.1z" fill="#e27625" stroke="#e27625" stroke-width=".3"/>
+                    <path d="M8.868 21.875l2.996-1.442-2.576-2.009-.42 3.451z" fill="#e27625" stroke="#e27625" stroke-width=".3"/>
+                    <path d="M16.136 20.433l2.988 1.442-.413-3.451-2.575 2.009z" fill="#e27625" stroke="#e27625" stroke-width=".3"/>
+                  </svg>
+                </div>
+                <div class="wallet-option-info">
+                  <div class="wallet-option-name">MetaMask</div>
+                  <div class="wallet-option-desc">모바일 앱 또는 브라우저 확장</div>
+                </div>
+                <div class="wallet-option-arrow">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                </div>
+              </div>
+
+              <!-- WalletConnect -->
+              <div class="wallet-option">
+                <div class="wallet-option-icon" style="background:#eff6ff">
+                  <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+                    <circle cx="14" cy="14" r="12" fill="#3b99fc" opacity=".12"/>
+                    <path d="M8.2 11.4c3.2-3.1 8.4-3.1 11.6 0l.4.4c.2.2.2.5 0 .6l-1.3 1.3c-.1.1-.3.1-.4 0l-.5-.5c-2.2-2.2-5.8-2.2-8 0l-.6.5c-.1.1-.3.1-.4 0L7.6 12.4c-.2-.2-.2-.5 0-.6l.6-.4zm14.3 2.7l1.2 1.2c.2.2.2.5 0 .6l-5.3 5.2c-.2.2-.5.2-.7 0l-3.8-3.7c0-.1-.1-.1-.2 0l-3.8 3.7c-.2.2-.5.2-.7 0l-5.3-5.2c-.2-.2-.2-.5 0-.6l1.2-1.2c.2-.2.5-.2.7 0l3.8 3.7c0 .1.1.1.2 0l3.8-3.7c.2-.2.5-.2.7 0l3.8 3.7c0 .1.1.1.2 0l3.8-3.7c.2-.2.5-.2.7 0z" fill="#3b99fc"/>
+                  </svg>
+                </div>
+                <div class="wallet-option-info">
+                  <div class="wallet-option-name">WalletConnect</div>
+                  <div class="wallet-option-desc">QR 스캔으로 연결</div>
+                </div>
+                <div class="wallet-option-arrow">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                </div>
+              </div>
+            </div>
+
+            <div class="wallet-notice">
+              <div class="wallet-notice-bar"></div>
+              <p>지갑 주소는 로그인 식별자로만 사용됩니다. 서명 요청 외에 자산 접근 권한을 요청하지 않습니다.</p>
+            </div>
+
+            <div style="padding:20px 20px 32px">
+              <div style="text-align:center;font-size:11px;color:var(--gray-400);line-height:1.6">
+                계속 진행하면 <span style="color:var(--primary-600);font-weight:600">서비스 이용약관</span> 및<br>
+                <span style="color:var(--primary-600);font-weight:600">개인정보처리방침</span>에 동의하는 것으로 간주됩니다.
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════ C-3 ACCOUNT TYPE -->
+  <div class="screen-wrap">
+    <div class="screen-label">C-3</div>
+    <div class="screen-name">계정 유형 선택</div>
+    <div class="phone">
+      <div class="phone-inner">
+
+        <div class="status-bar light">
+          <span style="font-family:'Inter'">9:41</span>
+          <div class="status-icons">
+            <svg width="16" height="12" viewBox="0 0 16 12" fill="var(--gray-700)"><rect x="0" y="3" width="3" height="9" rx="1"/><rect x="4.5" y="2" width="3" height="10" rx="1"/><rect x="9" y="0" width="3" height="12" rx="1"/><rect x="13.5" y="1" width="2.5" height="10" rx="1" opacity=".3"/></svg>
+            <svg width="24" height="12" viewBox="0 0 24 12" fill="none"><rect x="0.5" y="0.5" width="20" height="11" rx="3.5" stroke="var(--gray-400)"/><rect x="2" y="2" width="15" height="8" rx="2" fill="var(--gray-800)"/><path d="M22 4v4a2 2 0 000-4z" fill="var(--gray-400)"/></svg>
+          </div>
+        </div>
+
+        <div class="screen-content">
+          <div class="screen-scroll">
+            <div class="select-header">
+              <div class="select-step">계정 설정</div>
+              <h2>어떤 역할로<br/>시작하시나요?</h2>
+              <p>한 번 설정하면 변경할 수 없으니<br/>신중하게 선택해주세요.</p>
+            </div>
+
+            <div class="type-cards">
+              <!-- Worker card — selected state -->
+              <div class="type-card selected">
+                <div class="type-card-header">
+                  <div class="type-card-icon" style="background:var(--primary-100)">
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--primary-700)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="2" y="7" width="20" height="14" rx="2"/>
+                      <path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/>
+                      <line x1="12" y1="12" x2="12" y2="16"/>
+                      <line x1="10" y1="14" x2="14" y2="14"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <div class="type-card-title">알바생</div>
+                    <div class="type-card-sub">Part-time Worker</div>
+                  </div>
+                  <div style="margin-left:auto">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary-700)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" fill="var(--primary-700)" stroke="none"/><polyline points="8 12 11 15 16 9" stroke="white" stroke-width="2"/></svg>
+                  </div>
+                </div>
+                <div class="type-card-features">
+                  <div class="type-card-feature">
+                    <div class="feature-check">
+                      <svg width="9" height="9" viewBox="0 0 12 12" fill="none" stroke="var(--primary-700)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 6 5 9 10 3"/></svg>
+                    </div>
+                    QR로 출퇴근 기록
+                  </div>
+                  <div class="type-card-feature">
+                    <div class="feature-check">
+                      <svg width="9" height="9" viewBox="0 0 12 12" fill="none" stroke="var(--primary-700)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 6 5 9 10 3"/></svg>
+                    </div>
+                    SBT 배지로 경력 증명
+                  </div>
+                  <div class="type-card-feature">
+                    <div class="feature-check">
+                      <svg width="9" height="9" viewBox="0 0 12 12" fill="none" stroke="var(--primary-700)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 6 5 9 10 3"/></svg>
+                    </div>
+                    포트폴리오 QR 공유
+                  </div>
+                </div>
+              </div>
+
+              <!-- Manager card -->
+              <div class="type-card">
+                <div class="type-card-header">
+                  <div class="type-card-icon" style="background:var(--gray-100)">
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--gray-600)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+                      <polyline points="9 22 9 12 15 12 15 22"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <div class="type-card-title">사장님</div>
+                    <div class="type-card-sub">Store Manager</div>
+                  </div>
+                </div>
+                <div class="type-card-features">
+                  <div class="type-card-feature">
+                    <div class="feature-check">
+                      <svg width="9" height="9" viewBox="0 0 12 12" fill="none" stroke="var(--gray-400)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 6 5 9 10 3"/></svg>
+                    </div>
+                    매장 등록 및 알바 관리
+                  </div>
+                  <div class="type-card-feature">
+                    <div class="feature-check">
+                      <svg width="9" height="9" viewBox="0 0 12 12" fill="none" stroke="var(--gray-400)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 6 5 9 10 3"/></svg>
+                    </div>
+                    근태 현황 실시간 조회
+                  </div>
+                  <div class="type-card-feature">
+                    <div class="feature-check">
+                      <svg width="9" height="9" viewBox="0 0 12 12" fill="none" stroke="var(--gray-400)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 6 5 9 10 3"/></svg>
+                    </div>
+                    지원자 경력 즉시 검증
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="select-footer">
+              <div class="select-warning">
+                <div style="width:3px;background:var(--gray-300);border-radius:2px;flex-shrink:0;align-self:stretch"></div>
+                <p>계정 유형은 가입 완료 후 변경할 수 없습니다. 잘못 선택한 경우 새 지갑 주소로 재가입이 필요합니다.</p>
+              </div>
+              <button class="btn btn-primary btn-lg">알바생으로 시작</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════ C-4 PROFILE INPUT -->
+  <div class="screen-wrap">
+    <div class="screen-label">C-4</div>
+    <div class="screen-name">추가 정보 입력</div>
+    <div class="phone">
+      <div class="phone-inner">
+
+        <div class="status-bar light">
+          <span style="font-family:'Inter'">9:41</span>
+          <div class="status-icons">
+            <svg width="16" height="12" viewBox="0 0 16 12" fill="var(--gray-700)"><rect x="0" y="3" width="3" height="9" rx="1"/><rect x="4.5" y="2" width="3" height="10" rx="1"/><rect x="9" y="0" width="3" height="12" rx="1"/><rect x="13.5" y="1" width="2.5" height="10" rx="1" opacity=".3"/></svg>
+            <svg width="24" height="12" viewBox="0 0 24 12" fill="none"><rect x="0.5" y="0.5" width="20" height="11" rx="3.5" stroke="var(--gray-400)"/><rect x="2" y="2" width="15" height="8" rx="2" fill="var(--gray-800)"/><path d="M22 4v4a2 2 0 000-4z" fill="var(--gray-400)"/></svg>
+          </div>
+        </div>
+
+        <div class="screen-content">
+          <div class="profile-header">
+            <div class="profile-step-bar">
+              <div class="step-seg done"></div>
+              <div class="step-seg done"></div>
+              <div class="step-seg active"></div>
+            </div>
+            <h2>기본 정보를<br/>입력해주세요</h2>
+            <p>이름은 필수입니다. 나머지는<br/>나중에 설정할 수 있어요.</p>
+          </div>
+
+          <div class="screen-scroll">
+            <div class="profile-form">
+
+              <!-- 연결된 지갑 -->
+              <div>
+                <label class="input-label">연결된 지갑</label>
+                <div class="wallet-addr-box">
+                  <div class="wallet-addr-dot"></div>
+                  <div class="wallet-addr-text">0x3f2a...8c14</div>
+                  <div class="wallet-addr-label">연결됨</div>
+                </div>
+              </div>
+
+              <!-- 이름 -->
+              <div class="input-group">
+                <label class="input-label">이름<span class="required-star">*</span></label>
+                <input class="input" type="text" placeholder="홍길동" value="홍길동" />
+              </div>
+
+              <!-- 이메일 -->
+              <div class="input-group">
+                <label class="input-label">이메일 <span style="font-size:11px;color:var(--gray-400);font-weight:400">선택</span></label>
+                <input class="input" type="email" placeholder="example@email.com" />
+              </div>
+
+              <!-- 전화번호 -->
+              <div class="input-group">
+                <label class="input-label">전화번호 <span style="font-size:11px;color:var(--gray-400);font-weight:400">선택</span></label>
+                <input class="input" type="tel" placeholder="010-0000-0000" />
+              </div>
+
+              <!-- 계정 유형 확인 (읽기 전용) -->
+              <div class="input-group">
+                <label class="input-label">계정 유형</label>
+                <div style="display:flex;align-items:center;gap:10px;padding:13px 16px;background:var(--gray-50);border:1.5px solid var(--gray-200);border-radius:12px">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--primary-600)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="2" y="7" width="20" height="14" rx="2"/>
+                    <path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/>
+                  </svg>
+                  <span style="font-size:14px;font-weight:600;color:var(--gray-700)">알바생</span>
+                  <span style="font-size:11px;color:var(--gray-400);margin-left:auto">변경 불가</span>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <div class="profile-footer">
+            <button class="btn btn-primary btn-lg">시작하기</button>
+            <div class="profile-skip">건너뛰고 <span>나중에 입력</span></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</div><!-- /screens -->
+
+</body>
+</html>
