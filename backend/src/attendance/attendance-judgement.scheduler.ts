@@ -12,7 +12,10 @@ export class AttendanceJudgementScheduler {
 
   @Cron('0 0 0 * * *', { timeZone: 'Asia/Seoul' })
   async handleDailyAttendanceJudgement() {
-    await this.attendanceService.markAbsencesForYesterday();
-    this.logger.log('Daily attendance judgement completed', AttendanceJudgementScheduler.name);
+    const result = await this.attendanceService.judgeAttendanceForYesterday();
+    this.logger.log(
+      `Daily attendance judgement completed: ${result.checked} checked, ${result.insertedAbsent} absent inserted, ${result.updatedStatus} status updated`,
+      AttendanceJudgementScheduler.name,
+    );
   }
 }

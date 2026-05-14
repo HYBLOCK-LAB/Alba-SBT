@@ -1,7 +1,8 @@
-import { IsLatitude, IsLongitude, IsString, IsUUID } from 'class-validator';
+import { IsLatitude, IsLongitude, IsString } from 'class-validator';
+import { IsDbUuid } from '../../common/validation/db-uuid';
 
 export class ClockInDto {
-  @IsUUID()
+  @IsDbUuid()
   storeId: string;
 
   @IsString()
@@ -13,4 +14,3 @@ export class ClockInDto {
   @IsLongitude()
   longitude: number;
 }
-

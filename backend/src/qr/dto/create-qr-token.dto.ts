@@ -1,7 +1,6 @@
-import { IsUUID } from 'class-validator';
+import { IsDbUuid } from '../../common/validation/db-uuid';
 
 export class CreateQrTokenDto {
-  @IsUUID()
+  @IsDbUuid()
   storeId: string;
 }
-

@@ -1,7 +1,8 @@
-import { IsDateString, IsOptional, IsUUID } from 'class-validator';
+import { IsDateString, IsOptional } from 'class-validator';
+import { IsDbUuid } from '../../common/validation/db-uuid';
 
 export class GenerateSchedulesDto {
-  @IsUUID()
+  @IsDbUuid()
   staffAssignmentId: string;
 
   @IsDateString()
@@ -11,7 +12,6 @@ export class GenerateSchedulesDto {
   toDate: string;
 
   @IsOptional()
-  @IsUUID()
+  @IsDbUuid()
   recurringScheduleId?: string;
 }
-

@@ -1,8 +1,8 @@
-import { IsOptional, IsUUID } from 'class-validator';
+import { IsOptional } from 'class-validator';
+import { IsDbUuid } from '../../common/validation/db-uuid';
 
 export class ListExtraWorkRequestsDto {
   @IsOptional()
-  @IsUUID()
+  @IsDbUuid()
   storeId?: string;
 }
-

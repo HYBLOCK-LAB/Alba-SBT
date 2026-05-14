@@ -39,6 +39,21 @@ interface TodaySchedule {
   scheduled_end_time: string;
 }
 
+interface ScheduledWork {
+  id: string;
+  staff_assignment_id: string;
+  store_id: string;
+  user_id: string;
+  scheduled_date: string;
+  scheduled_start_time: string;
+}
+
+interface ScheduleAttendance {
+  id: string;
+  clock_in_time: string | null;
+  status: AttendanceStatus;
+}
+
 interface AcceptedExtraWorkApplication {
   id: string;
   extra_work_request_id: string;
@@ -223,11 +238,15 @@ export class AttendanceService {
     };
   }
 
-  async markAbsencesForYesterday() {
+  async judgeAttendanceForYesterday() {
     const date = yesterdayKstDate();
+    return this.judgeAttendanceForDate(date);
+  }
+
+  async judgeAttendanceForDate(date: string) {
     const { data: schedules, error } = await this.supabase.client
       .from('schedules')
-      .select('id, staff_assignment_id, store_id, user_id')
+      .select('id, staff_assignment_id, store_id, user_id, scheduled_date, scheduled_start_time')
       .eq('scheduled_date', date)
       .eq('is_cancelled', false);
 
@@ -235,32 +254,102 @@ export class AttendanceService {
       throw new Error(error.message);
     }
 
-    for (const schedule of schedules ?? []) {
-      const { data: existing } = await this.supabase.client
-        .from('attendance')
-        .select('id')
-        .eq('schedule_id', schedule.id)
-        .maybeSingle();
+    let insertedAbsent = 0;
+    let updatedStatus = 0;
 
-      if (existing) {
+    for (const schedule of (schedules ?? []) as ScheduledWork[]) {
+      const attendance = await this.findAttendanceByScheduleId(schedule.id);
+
+      if (!attendance) {
+        await this.insertAbsentAttendance(schedule);
+        insertedAbsent += 1;
         continue;
       }
 
-      const { error: insertError } = await this.supabase.client.from('attendance').insert({
-        staff_assignment_id: schedule.staff_assignment_id,
-        user_id: schedule.user_id,
-        store_id: schedule.store_id,
-        schedule_id: schedule.id,
-        type: 'regular',
-        status: 'absent',
-        clock_in_time: null,
-        clock_in_gps_verified: false,
-      });
-
-      if (insertError) {
-        throw new Error(insertError.message);
+      const nextStatus = this.judgeScheduledAttendanceStatus(schedule, attendance.clock_in_time);
+      if (attendance.status === nextStatus) {
+        continue;
       }
+
+      await this.updateAttendanceStatus(attendance.id, nextStatus);
+      updatedStatus += 1;
     }
+
+    return {
+      date,
+      checked: schedules?.length ?? 0,
+      insertedAbsent,
+      updatedStatus,
+    };
+  }
+
+  private async findAttendanceByScheduleId(scheduleId: string): Promise<ScheduleAttendance | null> {
+    const { data, error } = await this.supabase.client
+      .from('attendance')
+      .select('id, clock_in_time, status')
+      .eq('schedule_id', scheduleId)
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return data;
+  }
+
+  private async insertAbsentAttendance(schedule: ScheduledWork) {
+    const { error } = await this.supabase.client.from('attendance').insert({
+      staff_assignment_id: schedule.staff_assignment_id,
+      user_id: schedule.user_id,
+      store_id: schedule.store_id,
+      schedule_id: schedule.id,
+      type: 'regular',
+      status: 'absent',
+      clock_in_time: null,
+      clock_in_gps_verified: false,
+    });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+  }
+
+  private async updateAttendanceStatus(attendanceId: string, status: AttendanceStatus) {
+    const { error } = await this.supabase.client
+      .from('attendance')
+      .update({ status })
+      .eq('id', attendanceId);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+  }
+
+  private judgeScheduledAttendanceStatus(
+    schedule: Pick<ScheduledWork, 'scheduled_date' | 'scheduled_start_time'>,
+    clockInTime: string | null,
+  ): AttendanceStatus {
+    if (!clockInTime) {
+      return 'absent';
+    }
+
+    const clockIn = new Date(clockInTime);
+    const scheduledStart = this.toKstDateTime(schedule.scheduled_date, schedule.scheduled_start_time);
+
+    if (clockIn.getTime() <= scheduledStart.getTime()) {
+      return 'on_time';
+    }
+
+    const lateLimit = scheduledStart.getTime() + 30 * 60 * 1000;
+    return clockIn.getTime() <= lateLimit ? 'late' : 'absent';
+  }
+
+  private toKstDateTime(date: string, time: string): Date {
+    const [year, month, day] = date.split('-').map(Number);
+    const [hours, minutes, seconds = 0] = time.split(':').map(Number);
+    return new Date(Date.UTC(year, month - 1, day, hours - 9, minutes, seconds));
   }
 
   private async getAttendanceById(attendanceId: string) {

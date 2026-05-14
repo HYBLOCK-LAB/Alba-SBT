@@ -1,7 +1,8 @@
-import { IsDateString, IsMilitaryTime, IsUUID } from 'class-validator';
+import { IsDateString, IsMilitaryTime } from 'class-validator';
+import { IsDbUuid } from '../../common/validation/db-uuid';
 
 export class CreateExtraWorkRequestDto {
-  @IsUUID()
+  @IsDbUuid()
   storeId: string;
 
   @IsDateString()
@@ -13,4 +14,3 @@ export class CreateExtraWorkRequestDto {
   @IsMilitaryTime()
   requestedEndTime: string;
 }
-

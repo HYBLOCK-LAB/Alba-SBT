@@ -1,7 +1,6 @@
-import { IsUUID } from 'class-validator';
+import { IsDbUuid } from '../../common/validation/db-uuid';
 
 export class ApplyExtraWorkDto {
-  @IsUUID()
+  @IsDbUuid()
   extraWorkRequestId: string;
 }
-
