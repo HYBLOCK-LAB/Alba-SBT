@@ -319,23 +319,23 @@ Alba-SBT 시스템의 필수 테이블을 **앱 흐름 순서**대로 정렬.
 
 ---
 
-### `level_up_requests` — 승급 판독 & Multisig 상태
-| 컬럼 | 타입 | 설명 |
-|------|------|------|
-| `id` | UUID | 기본 키 |
-| `user_id` | UUID (FK) | 사용자 ID (`users.id`) |
-| `current_level` | INT | 현재 레벨 (1~10) |
-| `target_level` | INT | 목표 레벨 |
-| `status` | ENUM('pending', 'awaiting_approval', 'multisig_signed', 'minted', 'rejected') | 승급 상태 |
-| `approving_store_id` | UUID (FK, NULLABLE) | sig1 서명한 사장님의 매장 ID (`stores.id`) — 다중 매장 알바생의 경우 주 매장(최초 승인 매장) 기준, sig1 수신 완료 시 B-2가 기록 |
-| `nonce` | BIGINT | EIP-712 서명 재사용 방지 nonce (컨트랙트 on-chain nonce와 동기화) |
-| `manager_signature` | VARCHAR (NULLABLE) | 사장님 EIP-712 서명 |
-| `platform_signature` | VARCHAR (NULLABLE) | 플랫폼 서명 |
-| `sbt_token_id` | VARCHAR (NULLABLE) | 발급된 SBT 토큰 ID |
-| `requested_at` | TIMESTAMP | 승급 신청 일시 |
-| `approved_at` | TIMESTAMP (NULLABLE) | 사장님 승인 일시 |
-| `minted_at` | TIMESTAMP (NULLABLE) | SBT 민팅 완료 일시 |
-| `created_at` | TIMESTAMP | 기록 생성 일시 |
+ ### `level_up_requests` — 승급 판독 & Multisig 상태
+  | 컬럼 | 타입 | 설명 |
+  |------|------|------|
+  | `id` | UUID | 기본 키 |
+  | `user_id` | UUID (FK) | 사용자 ID (`users.id`) |
+  | `current_level` | INT | 현재 레벨 (1~10) |
+  | `target_level` | INT | 목표 레벨 |
+  | `status` | ENUM('pending', 'awaiting_approval', 'multisig_signed', 'minted', 'rejected', 'failed') | 승급 상태 |
+  | `approving_store_id` | UUID (FK, NULLABLE) | sig1 서명한 사장님의 매장 ID (`stores.id`) — 다중 매장 알바생의 경우 주 매장(최초 승인 매장) 기준, sig1 수신 완료 시 B-2가 기록 |
+  | `nonce` | VARCHAR | worker address별 EIP-712 서명 재사용 방지 nonce (`uint256` 값을 문자열로 저장, 컨트랙트 on-chain nonce와 동기화) |
+  | `manager_signature` | VARCHAR (NULLABLE) | 사장님 EIP-712 서명 |
+  | `platform_signature` | VARCHAR (NULLABLE) | 플랫폼 서명 |
+  | `sbt_token_id` | VARCHAR (NULLABLE) | 발급된 SBT 토큰 ID |
+  | `requested_at` | TIMESTAMP | 승급 신청 일시 |
+  | `approved_at` | TIMESTAMP (NULLABLE) | 사장님 승인 일시 |
+  | `minted_at` | TIMESTAMP (NULLABLE) | SBT 민팅 완료 일시 |
+  | `created_at` | TIMESTAMP | 기록 생성 일시 |
 
   **파트**: 블록체인 — SBT 발급
 
