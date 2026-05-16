@@ -60,6 +60,40 @@ export class SbtMetadataService {
     };
   }
 
+  async uploadForLevelUpRequest(requestId: string) {
+    const levelUpRequest = await this.getLevelUpRequest(requestId);
+    const [user, metadata] = await Promise.all([
+      this.getUser(levelUpRequest.user_id),
+      this.buildForLevelUpRequest(requestId)
+    ]);
+    const bucket = process.env.SBT_METADATA_BUCKET ?? 'sbt-metadata';
+    const path = `${user.wallet_address.toLowerCase()}/${levelUpRequest.target_level}.json`;
+
+    await this.ensureBucket(bucket);
+
+    const { error } = await this.supabaseService
+      .getClient()
+      .storage
+      .from(bucket)
+      .upload(path, Buffer.from(JSON.stringify(metadata, null, 2), 'utf8'), {
+        contentType: 'application/json',
+        upsert: true
+      });
+
+    if (error) {
+      throw error;
+    }
+
+    const { data } = this.supabaseService.getClient().storage.from(bucket).getPublicUrl(path);
+
+    return {
+      bucket,
+      path,
+      publicUrl: data.publicUrl,
+      metadata
+    };
+  }
+
   private async getLevelUpRequest(requestId: string) {
     const { data, error } = await this.supabaseService
       .getClient()
@@ -77,6 +111,28 @@ export class SbtMetadataService {
     }
 
     return data as LevelUpRequest;
+  }
+
+  private async ensureBucket(bucket: string) {
+    const storage = this.supabaseService.getClient().storage;
+    const { data, error } = await storage.listBuckets();
+
+    if (error) {
+      throw error;
+    }
+
+    if (data.some((existingBucket) => existingBucket.name === bucket)) {
+      return;
+    }
+
+    const { error: createError } = await storage.createBucket(bucket, {
+      public: true,
+      allowedMimeTypes: ['application/json']
+    });
+
+    if (createError) {
+      throw createError;
+    }
   }
 
   private async getUser(userId: string) {

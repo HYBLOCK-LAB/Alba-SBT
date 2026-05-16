@@ -46,11 +46,19 @@ That lets us keep:
 - old assignment rows for history
 - only one open active assignment per `user_id + store_id`
 
-## Next implementation targets
+## Environment variables
 
-- add request validation and exception mapping
-- add approval-sign workflow after approval ownership and contract ABI are finalized
-- split read/write DTOs from persistence models
+- `SUPABASE_URL`
+- `SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `JWT_SECRET` - shared HS256 secret from the SIWE/JWT owner
+- `PLATFORM_SIGNER_PRIVATE_KEY` - platform wallet used for sig2 and the contract transaction
+- `SEPOLIA_RPC_URL`
+- `SBT_CONTRACT_ADDRESS`
+- `SBT_CONTRACT_CHAIN_ID` - defaults to Sepolia `11155111`
+- `EIP712_NAME` - defaults to `AlbaSBT`
+- `EIP712_VERSION` - defaults to `1`
+- `SBT_METADATA_BUCKET` - defaults to `sbt-metadata`
 
 ## B-2 level-up read APIs
 
@@ -60,6 +68,19 @@ That lets us keep:
   - Returns `currentLevel`, the latest request, the active in-progress request, and request history for worker polling UI.
 - `GET /level-up/requests/:requestId`
   - Returns request detail, worker wallet info, target badge image info, evidence snapshot, signatures, nonce, and minted SBT token info when available.
+
+## B-2 approval and mint APIs
+
+All approval routes require `Authorization: Bearer <JWT>` with the agreed HS256 claims:
+`sub`, `walletAddress`, `accountType`, `iat`, and `exp`.
+
+- `GET /approvals/pending`
+  - Returns signable pending/awaiting requests for the authenticated primary-store manager.
+- `GET /approvals/requests/:requestId/signing-payload`
+  - Returns the EIP-712 domain/types/message for `{ worker, level, nonce }`.
+- `POST /approvals/sign`
+  - Accepts `levelUpRequestId` and `managerSignature` (`sig1` is also accepted).
+  - Verifies that the signer is the primary-store manager, generates platform `sig2`, uploads metadata JSON to Supabase Storage, calls `approveLevelUp`, and records the minted SBT through `complete_sbt_mint`.
 
 ## Remaining design risk
 

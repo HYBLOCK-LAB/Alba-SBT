@@ -9,6 +9,7 @@ import { LevelUpModule } from './modules/level-up/level-up.module.js';
 import { BadgesModule } from './modules/badges/badges.module.js';
 import { SbtMetadataModule } from './modules/sbt-metadata/sbt-metadata.module.js';
 import { SbtTokensModule } from './modules/sbt-tokens/sbt-tokens.module.js';
+import { ApprovalsModule } from './modules/approvals/approvals.module.js';
 
 @Module({
   imports: [
@@ -19,7 +20,8 @@ import { SbtTokensModule } from './modules/sbt-tokens/sbt-tokens.module.js';
     LevelUpModule,
     BadgesModule,
     SbtMetadataModule,
-    SbtTokensModule
+    SbtTokensModule,
+    ApprovalsModule
   ],
   controllers: [HealthController]
 })
