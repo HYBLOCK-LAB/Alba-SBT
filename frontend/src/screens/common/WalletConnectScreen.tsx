@@ -3,9 +3,9 @@ import {
   View, Text, TouchableOpacity, ActivityIndicator, Alert, Linking,
 } from 'react-native';
 import { colors } from '../../constants/theme';
-import { connectWalletConnect, getWcClient } from '../../services/walletService';
+import { getWcClient } from '../../services/walletService';
 import { createSiweMessage } from '../../services/siwe';
-import { siweLogin, getUserByWallet } from '../../services/authService';
+import { requestSiweNonce, verifySiwe } from '../../services/authService';
 import { useAuthStore } from '../../store/authStore';
 import type { AuthScreenProps } from '../../navigation/types';
 
@@ -50,43 +50,44 @@ function WalletOption({
   );
 }
 
-async function loginWithAddress(
+async function loginWithSession(
   address: string,
-  signMessage: (nonce: string) => Promise<string>,
-  setToken: (t: string) => void,
-  setWalletAddress: (a: string) => void,
-  setUser: (u: any) => void,
+  signMessage: (message: string) => Promise<string>,
+  store: ReturnType<typeof useAuthStore.getState>,
+  navigation: AuthScreenProps<'WalletConnect'>['navigation'],
 ) {
-  const nonce = Math.random().toString(36).slice(2);
-  const message = createSiweMessage(address, nonce);
-  const signature = await signMessage(nonce);
+  // 1. 서버에서 nonce 발급
+  const { nonce } = await requestSiweNonce(address);
 
-  const { token, user } = await siweLogin(address, message, signature);
-  setToken(token);
-  setWalletAddress(address);
-  setUser(user);
-  return user;
+  // 2. SIWE 메시지 서명
+  const message = createSiweMessage(address, nonce);
+  const signature = await signMessage(message);
+
+  // 3. 서명 검증
+  const result = await verifySiwe(address, message, signature);
+  store.setWalletAddress(result.walletAddress);
+
+  if (result.isNewUser) {
+    // 신규 유저: signupToken 저장 후 가입 화면으로
+    store.setSignupToken(result.signupToken!);
+    navigation.navigate('AccountType');
+  } else {
+    // 기존 유저: 바로 홈으로
+    store.setToken(result.token!);
+    navigation.reset({
+      index: 0,
+      routes: [{ name: result.accountType === 'manager' ? ('ManagerTab' as any) : ('WorkerTab' as any) }],
+    });
+  }
 }
 
 export default function WalletConnectScreen({ navigation }: AuthScreenProps<'WalletConnect'>) {
   const [loadingMM, setLoadingMM] = useState(false);
   const [loadingWC, setLoadingWC] = useState(false);
-  const { setToken, setWalletAddress, setUser } = useAuthStore();
+  const store = useAuthStore();
 
-  const afterLogin = (user: any) => {
-    // 신규 유저면 AccountType으로, 기존 유저면 바로 홈으로
-    if (!user.account_type) {
-      navigation.navigate('AccountType');
-    } else {
-      navigation.reset({
-        index: 0,
-        routes: [{ name: user.account_type === 'manager' ? ('ManagerTab' as any) : ('WorkerTab' as any) }],
-      });
-    }
-  };
-
-  const handleMetaMask = async () => {
-    setLoadingMM(true);
+  const connectAndLogin = async (openUri: (uri: string) => void, setLoading: (v: boolean) => void) => {
+    setLoading(true);
     try {
       const client = await getWcClient();
       const { uri, approval } = await client.connect({
@@ -98,62 +99,24 @@ export default function WalletConnectScreen({ navigation }: AuthScreenProps<'Wal
           },
         },
       });
-      if (uri) Linking.openURL(`metamask://wc?uri=${encodeURIComponent(uri)}`);
+      if (uri) openUri(uri);
+
       const session = await approval();
       const accounts = session.namespaces.eip155?.accounts ?? [];
       const address = accounts[0]?.split(':')[2] ?? '';
 
-      const signMessage = async (nonce: string) => {
-        const message = createSiweMessage(address, nonce);
-        return client.request<string>({
+      const signMessage = (message: string) =>
+        client.request<string>({
           topic: session.topic,
           chainId: 'eip155:11155111',
           request: { method: 'personal_sign', params: [message, address] },
         });
-      };
 
-      const user = await loginWithAddress(address, signMessage, setToken, setWalletAddress, setUser);
-      afterLogin(user);
+      await loginWithSession(address, signMessage, store, navigation);
     } catch (e: any) {
-      Alert.alert('MetaMask 연결 실패', e?.message ?? '다시 시도해 주세요.');
+      Alert.alert('연결 실패', e?.message ?? '다시 시도해 주세요.');
     } finally {
-      setLoadingMM(false);
-    }
-  };
-
-  const handleWalletConnect = async () => {
-    setLoadingWC(true);
-    try {
-      const client = await getWcClient();
-      const { uri, approval } = await client.connect({
-        requiredNamespaces: {
-          eip155: {
-            methods: ['eth_sign', 'personal_sign'],
-            chains: ['eip155:11155111'],
-            events: ['chainChanged', 'accountsChanged'],
-          },
-        },
-      });
-      if (uri) Linking.openURL(uri);
-      const session = await approval();
-      const accounts = session.namespaces.eip155?.accounts ?? [];
-      const address = accounts[0]?.split(':')[2] ?? '';
-
-      const signMessage = async (nonce: string) => {
-        const message = createSiweMessage(address, nonce);
-        return client.request<string>({
-          topic: session.topic,
-          chainId: 'eip155:11155111',
-          request: { method: 'personal_sign', params: [message, address] },
-        });
-      };
-
-      const user = await loginWithAddress(address, signMessage, setToken, setWalletAddress, setUser);
-      afterLogin(user);
-    } catch (e: any) {
-      Alert.alert('WalletConnect 연결 실패', e?.message ?? '다시 시도해 주세요.');
-    } finally {
-      setLoadingWC(false);
+      setLoading(false);
     }
   };
 
@@ -180,12 +143,20 @@ export default function WalletConnectScreen({ navigation }: AuthScreenProps<'Wal
           <WalletOption
             iconBg="#fff6e5" iconColor="#f6851b"
             name="MetaMask" desc="가장 널리 사용되는 암호화폐 지갑"
-            onPress={handleMetaMask} loading={loadingMM}
+            onPress={() => connectAndLogin(
+              (uri) => Linking.openURL(`metamask://wc?uri=${encodeURIComponent(uri)}`),
+              setLoadingMM,
+            )}
+            loading={loadingMM}
           />
           <WalletOption
             iconBg="#e8f0fa" iconColor={colors.brand[600]}
             name="WalletConnect" desc="모든 WalletConnect 호환 지갑"
-            onPress={handleWalletConnect} loading={loadingWC}
+            onPress={() => connectAndLogin(
+              (uri) => Linking.openURL(uri),
+              setLoadingWC,
+            )}
+            loading={loadingWC}
           />
         </View>
 

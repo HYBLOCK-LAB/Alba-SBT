@@ -4,7 +4,7 @@ import {
   KeyboardAvoidingView, Platform, Alert, ActivityIndicator,
 } from 'react-native';
 import { colors } from '../../constants/theme';
-import { createUser } from '../../services/authService';
+import { completeSignup } from '../../services/authService';
 import { useAuthStore } from '../../store/authStore';
 import { shortenAddress } from '../../services/siwe';
 import type { AuthScreenProps } from '../../navigation/types';
@@ -30,10 +30,7 @@ function StepBar({ step }: { step: number }) {
 
 function WalletDisplay({ address }: { address: string }) {
   return (
-    <View
-      className="flex-row items-center justify-between p-4 rounded-2xl mb-5"
-      style={{ backgroundColor: colors.neutral[100] }}
-    >
+    <View className="flex-row items-center justify-between p-4 rounded-2xl mb-5" style={{ backgroundColor: colors.neutral[100] }}>
       <View>
         <Text className="text-xs mb-1" style={{ color: colors.neutral[400] }}>연결된 지갑</Text>
         <Text className="font-mono text-sm font-semibold" style={{ color: colors.neutral[700] }}>
@@ -68,10 +65,8 @@ function InputField({
         keyboardType={keyboardType ?? 'default'}
         className="px-4 py-3.5 rounded-xl border text-sm"
         style={{
-          borderColor: colors.neutral[200],
-          backgroundColor: colors.neutral[0],
-          color: colors.neutral[800],
-          fontSize: 14,
+          borderColor: colors.neutral[200], backgroundColor: colors.neutral[0],
+          color: colors.neutral[800], fontSize: 14,
         }}
       />
     </View>
@@ -80,22 +75,24 @@ function InputField({
 
 export default function ProfileSetupScreen({ navigation, route }: AuthScreenProps<'ProfileSetup'>) {
   const { accountType } = route.params;
-  const { walletAddress, setUser } = useAuthStore();
+  const { walletAddress, signupToken, setToken } = useAuthStore();
   const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleComplete = async () => {
-    if (!name.trim() || !walletAddress) return;
+    if (!name.trim() || !signupToken) return;
     setLoading(true);
     try {
-      const user = await createUser({
-        wallet_address: walletAddress,
-        account_type: accountType,
+      const result = await completeSignup({
+        signupToken,
+        accountType,
         name: name.trim(),
+        email: email.trim() || undefined,
         phone: phone.trim() || undefined,
       });
-      setUser(user);
+      setToken(result.token);
       navigation.reset({
         index: 0,
         routes: [{ name: accountType === 'manager' ? ('ManagerTab' as any) : ('WorkerTab' as any) }],
@@ -121,19 +118,14 @@ export default function ProfileSetupScreen({ navigation, route }: AuthScreenProp
             기본 정보 입력
           </Text>
           <Text className="text-sm leading-relaxed mb-6" style={{ color: colors.neutral[400] }}>
-            이름은 경력 증명서에 표시됩니다.{'\n'}전화번호는 선택 사항입니다.
+            이름은 경력 증명서에 표시됩니다.{'\n'}이메일·전화번호는 선택 사항입니다.
           </Text>
 
           {walletAddress && <WalletDisplay address={walletAddress} />}
 
-          <InputField
-            label="이름" placeholder="실명을 입력해 주세요"
-            value={name} onChangeText={setName} required
-          />
-          <InputField
-            label="전화번호" placeholder="010-0000-0000"
-            value={phone} onChangeText={setPhone} keyboardType="phone-pad"
-          />
+          <InputField label="이름" placeholder="실명을 입력해 주세요" value={name} onChangeText={setName} required />
+          <InputField label="이메일" placeholder="example@email.com" value={email} onChangeText={setEmail} keyboardType="email-address" />
+          <InputField label="전화번호" placeholder="010-0000-0000" value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
         </View>
 
         <View className="px-6 pb-12">
