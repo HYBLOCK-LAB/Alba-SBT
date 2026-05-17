@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Manager Screens 3 · Alba-SBT</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;900&family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+    :root {
+      --primary-900: #061e36; --primary-800: #0b3260; --primary-700: #0b4c86;
+      --primary-600: #1160a4; --primary-500: #1a78c8; --primary-400: #4096d8;
+      --primary-300: #74b5e6; --primary-200: #b0d4f1; --primary-100: #dceef9; --primary-50: #f0f7fd;
+      --gray-900: #111827; --gray-800: #1f2937; --gray-700: #374151; --gray-600: #4b5563;
+      --gray-500: #6b7280; --gray-400: #9ca3af; --gray-300: #d1d5db; --gray-200: #e5e7eb;
+      --gray-100: #f3f4f6; --gray-50: #f9fafb; --white: #ffffff;
+      --success-500: #22c55e; --success-100: #dcfce7;
+      --error-500: #ef4444;
+      --warning-500: #f59e0b;
+      --font: 'Noto Sans KR', 'Inter', sans-serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: var(--font); background: #0f172a; min-height: 100vh; padding: 48px 32px; }
+
+    .page-header { text-align: center; margin-bottom: 48px; }
+    .page-header h1 { font-size: 13px; font-weight: 600; color: rgba(255,255,255,.35); letter-spacing: .12em; text-transform: uppercase; margin-bottom: 8px; }
+    .page-header p { font-size: 22px; font-weight: 700; color: rgba(255,255,255,.85); }
+
+    .screens { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; max-width: 1040px; margin: 0 auto; }
+    .screen-wrap { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+    .screen-label { font-size: 11px; font-weight: 600; color: rgba(255,255,255,.35); letter-spacing: .1em; text-transform: uppercase; }
+    .screen-name { font-size: 14px; font-weight: 600; color: rgba(255,255,255,.7); margin-top: 2px; }
+
+    .phone { width: 300px; background: var(--gray-50); border-radius: 44px; overflow: hidden; box-shadow: 0 0 0 8px #1e293b, 0 0 0 10px #334155, 0 32px 64px rgba(0,0,0,.6); flex-shrink: 0; }
+    .phone-inner { height: 620px; overflow: hidden; display: flex; flex-direction: column; }
+
+    .status-bar { height: 44px; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; flex-shrink: 0; font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 600; }
+    .status-bar.light { background: var(--white); color: var(--gray-800); }
+    .status-icons { display: flex; align-items: center; gap: 5px; }
+
+    .screen-content { flex: 1; background: var(--white); display: flex; flex-direction: column; overflow: hidden; }
+    .screen-scroll { flex: 1; overflow-y: auto; overflow-x: hidden; }
+    .screen-scroll::-webkit-scrollbar { display: none; }
+
+    .top-bar { padding: 12px 20px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--gray-100); background: var(--white); flex-shrink: 0; }
+    .top-bar-title { font-size: 15px; font-weight: 700; color: var(--gray-900); flex: 1; text-align: center; }
+
+    .inner-tabs { display: flex; overflow-x: auto; border-bottom: 1px solid var(--gray-100); flex-shrink: 0; background: var(--white); }
+    .inner-tabs::-webkit-scrollbar { display: none; }
+    .inner-tab { flex-shrink: 0; padding: 11px 14px; font-size: 11px; font-weight: 600; color: var(--gray-400); white-space: nowrap; position: relative; }
+    .inner-tab.active { color: var(--primary-700); }
+    .inner-tab.active::after { content: ''; position: absolute; bottom: 0; left: 10px; right: 10px; height: 2px; background: var(--primary-700); border-radius: 2px 2px 0 0; }
+
+    .btn { display: flex; align-items: center; justify-content: center; gap: 8px; font-family: var(--font); font-weight: 600; border: none; cursor: pointer; line-height: 1; transition: all .15s; }
+    .btn-primary { background: var(--primary-700); color: var(--white); box-shadow: 0 4px 16px rgba(11,76,134,.3); }
+    .btn-outline { background: transparent; color: var(--primary-700); border: 1.5px solid var(--primary-200); }
+    .btn-lg { font-size: 14px; padding: 14px 20px; width: 100%; border-radius: 12px; }
+
+    .badge { display: inline-flex; align-items: center; font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 4px; }
+    .badge-success { border: 1px solid #86efac; color: #15803d; }
+    .badge-gray { border: 1px solid var(--gray-300); color: var(--gray-500); }
+    .badge-primary { border: 1px solid var(--primary-300); color: var(--primary-700); }
+    .badge-dark { background: var(--gray-900); color: var(--white); font-size: 9px; letter-spacing: .04em; border: none; }
+
+    /* QR pattern */
+    .qr-pattern {
+      width: 150px; height: 150px;
+      background:
+        /* 位置検出パターン TL */
+        linear-gradient(var(--gray-900) 0%, var(--gray-900) 100%) 0 0 / 42px 42px no-repeat,
+        linear-gradient(var(--white) 0%, var(--white) 100%) 6px 6px / 30px 30px no-repeat,
+        linear-gradient(var(--gray-900) 0%, var(--gray-900) 100%) 12px 12px / 18px 18px no-repeat,
+        /* TR */
+        linear-gradient(var(--gray-900) 0%, var(--gray-900) 100%) right 0 top 0 / 42px 42px no-repeat,
+        linear-gradient(var(--white) 0%, var(--white) 100%) right 6px top 6px / 30px 30px no-repeat,
+        linear-gradient(var(--gray-900) 0%, var(--gray-900) 100%) right 12px top 12px / 18px 18px no-repeat,
+        /* BL */
+        linear-gradient(var(--gray-900) 0%, var(--gray-900) 100%) 0 bottom / 42px 42px no-repeat,
+        linear-gradient(var(--white) 0%, var(--white) 100%) 6px bottom 6px / 30px 30px no-repeat,
+        linear-gradient(var(--gray-900) 0%, var(--gray-900) 100%) 12px bottom 12px / 18px 18px no-repeat,
+        /* data modules */
+        repeating-conic-gradient(var(--gray-900) 0% 25%, transparent 0% 50%) 48px 48px / 8px 8px;
+      border-radius: 6px;
+      position: relative;
+    }
+    .qr-center {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 28px; height: 28px;
+      background: var(--white);
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    /* Condition check row */
+    .cond-row { display: flex; align-items: center; gap: 8px; padding: 7px 0; }
+    .cond-check { width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .cond-text { font-size: 12px; color: var(--gray-700); flex: 1; }
+
+    /* Alert inline */
+    .alert-inline { display: flex; gap: 10px; background: var(--white); border: 1.5px solid var(--gray-100); border-radius: 10px; padding: 11px 13px; align-items: flex-start; }
+    .alert-bar { width: 3px; border-radius: 2px; align-self: stretch; flex-shrink: 0; }
+
+    /* Profile hero */
+    .profile-hero { background: var(--primary-900); padding: 20px; }
+    .profile-stat-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-top: 14px; }
+    .profile-stat { text-align: center; }
+    .profile-stat-val { font-size: 17px; font-weight: 800; color: var(--white); font-family: 'Inter', sans-serif; }
+    .profile-stat-label { font-size: 10px; color: rgba(255,255,255,.4); margin-top: 2px; }
+  </style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>Alba-SBT · Manager Screens</h1>
+  <p>사장님 화면 · M-7 ~ M-9</p>
+</div>
+
+<div class="screens">
+
+  <!-- ══════════════════════════════════════════ M-7 QR 생성 -->
+  <div class="screen-wrap">
+    <div class="screen-label">M-7</div>
+    <div class="screen-name">매장 랜딩 — QR 생성</div>
+    <div class="phone">
+      <div class="phone-inner">
+        <div class="status-bar light">
+          <span>9:41</span>
+          <div class="status-icons">
+            <svg width="16" height="12" viewBox="0 0 16 12" fill="var(--gray-700)"><rect x="0" y="3" width="3" height="9" rx="1"/><rect x="4.5" y="2" width="3" height="10" rx="1"/><rect x="9" y="0" width="3" height="12" rx="1"/><rect x="13.5" y="1" width="2.5" height="10" rx="1" opacity=".3"/></svg>
+            <svg width="24" height="12" viewBox="0 0 24 12" fill="none"><rect x=".5" y=".5" width="20" height="11" rx="3.5" stroke="var(--gray-400)"/><rect x="2" y="2" width="15" height="8" rx="2" fill="var(--gray-800)"/><path d="M22 4v4a2 2 0 000-4z" fill="var(--gray-400)"/></svg>
+          </div>
+        </div>
+        <div class="screen-content">
+          <div class="top-bar">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--gray-600)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            <span class="top-bar-title">맥도날드 신촌점</span>
+            <div style="width:18px"></div>
+          </div>
+          <div class="inner-tabs">
+            <div class="inner-tab">인사 관리</div>
+            <div class="inner-tab">근태 관리</div>
+            <div class="inner-tab">추가 근무</div>
+            <div class="inner-tab active">QR 생성</div>
+            <div class="inner-tab">승급 승인</div>
+          </div>
+          <div class="screen-scroll">
+            <div style="padding:24px 20px;display:flex;flex-direction:column;align-items:center;gap:0">
+
+              <!-- QR 카드 -->
+              <div style="background:var(--white);border:1.5px solid var(--gray-100);border-radius:20px;padding:28px 24px;display:flex;flex-direction:column;align-items:center;gap:14px;width:100%;box-shadow:0 4px 20px rgba(0,0,0,.06)">
+                <div class="qr-pattern">
+                  <div class="qr-center">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--primary-700)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+                  </div>
+                </div>
+
+                <!-- 타이머 -->
+                <div style="text-align:center">
+                  <div style="font-size:52px;font-weight:900;font-family:'Inter',monospace;color:var(--primary-700);line-height:1">07</div>
+                  <div style="font-size:12px;color:var(--gray-400);margin-top:4px">초 후 자동 소멸</div>
+                </div>
+
+                <div style="font-size:11px;color:var(--gray-400);text-align:center">맥도날드 신촌점 · 2026.05.06</div>
+              </div>
+
+              <div style="height:20px"></div>
+
+              <button class="btn btn-primary btn-lg" style="gap:8px">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+                QR 재생성
+              </button>
+
+              <div style="margin-top:14px;font-size:11px;color:var(--gray-400);text-align:center;line-height:1.7;padding:0 8px">
+                QR은 10초간 유효합니다.<br>알바생이 스캔하면 출퇴근이 자동 기록됩니다.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════ M-8 승급 승인 -->
+  <div class="screen-wrap">
+    <div class="screen-label">M-8</div>
+    <div class="screen-name">매장 랜딩 — 승급 승인</div>
+    <div class="phone">
+      <div class="phone-inner">
+        <div class="status-bar light">
+          <span>9:41</span>
+          <div class="status-icons">
+            <svg width="16" height="12" viewBox="0 0 16 12" fill="var(--gray-700)"><rect x="0" y="3" width="3" height="9" rx="1"/><rect x="4.5" y="2" width="3" height="10" rx="1"/><rect x="9" y="0" width="3" height="12" rx="1"/><rect x="13.5" y="1" width="2.5" height="10" rx="1" opacity=".3"/></svg>
+            <svg width="24" height="12" viewBox="0 0 24 12" fill="none"><rect x=".5" y=".5" width="20" height="11" rx="3.5" stroke="var(--gray-400)"/><rect x="2" y="2" width="15" height="8" rx="2" fill="var(--gray-800)"/><path d="M22 4v4a2 2 0 000-4z" fill="var(--gray-400)"/></svg>
+          </div>
+        </div>
+        <div class="screen-content">
+          <div class="top-bar">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--gray-600)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            <span class="top-bar-title">맥도날드 신촌점</span>
+            <div style="width:18px"></div>
+          </div>
+          <div class="inner-tabs">
+            <div class="inner-tab">인사 관리</div>
+            <div class="inner-tab">근태 관리</div>
+            <div class="inner-tab">추가 근무</div>
+            <div class="inner-tab">QR 생성</div>
+            <div class="inner-tab active">승급 승인</div>
+          </div>
+          <div class="screen-scroll">
+            <div style="padding:14px 16px">
+              <div style="font-size:11px;font-weight:700;color:var(--gray-500);letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px">승인 대기 <span style="color:var(--gray-400);font-weight:500">1명</span></div>
+
+              <!-- 승급 카드 -->
+              <div style="border:1.5px solid var(--gray-100);border-radius:16px;padding:16px;margin-bottom:14px">
+                <!-- 헤더 -->
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+                  <div style="width:38px;height:38px;background:var(--primary-50);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--primary-600)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+                  </div>
+                  <div style="flex:1">
+                    <div style="font-size:14px;font-weight:700;color:var(--gray-900)">홍길동</div>
+                    <div style="display:flex;align-items:center;gap:6px;margin-top:2px">
+                      <span style="font-size:11px;color:var(--gray-400)">Lv.2</span>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--gray-400)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                      <span style="font-size:11px;font-weight:700;color:var(--primary-700)">Lv.3</span>
+                    </div>
+                  </div>
+                  <span class="badge badge-success">조건 충족</span>
+                </div>
+
+                <!-- 조건 -->
+                <div style="background:var(--gray-50);border-radius:10px;padding:10px 12px;margin-bottom:12px">
+                  <div class="cond-row">
+                    <div class="cond-check" style="background:var(--primary-700)">
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    </div>
+                    <div class="cond-text">6개월 근속 <span style="color:var(--gray-400)">(182일)</span></div>
+                  </div>
+                  <div class="cond-row">
+                    <div class="cond-check" style="background:var(--primary-700)">
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    </div>
+                    <div class="cond-text">지각 3회 이하 <span style="color:var(--gray-400)">(1회)</span></div>
+                  </div>
+                  <div class="cond-row">
+                    <div class="cond-check" style="background:var(--primary-700)">
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    </div>
+                    <div class="cond-text">추가 근무 수락 5회 이상 <span style="color:var(--gray-400)">(6회)</span></div>
+                  </div>
+                </div>
+
+                <!-- 경고 -->
+                <div class="alert-inline" style="margin-bottom:12px">
+                  <div class="alert-bar" style="background:var(--warning-500)"></div>
+                  <div style="font-size:11px;color:var(--gray-500);line-height:1.6">서명 후 블록체인에 영구 기록됩니다. 취소할 수 없습니다.</div>
+                </div>
+
+                <button class="btn btn-primary btn-lg">서명하고 승인</button>
+                <div style="text-align:center;margin-top:10px;font-size:12px;color:var(--gray-400);cursor:pointer">보류</div>
+              </div>
+
+              <!-- 완료 내역 -->
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+                <div style="font-size:11px;font-weight:700;color:var(--gray-500);letter-spacing:.06em;text-transform:uppercase">승인 완료 <span style="font-weight:500">2건</span></div>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--gray-400)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+              </div>
+              <div style="opacity:.5">
+                <div style="padding:10px 0;border-bottom:1px solid var(--gray-100);font-size:12px;color:var(--gray-600)">김민지 Lv.1 → 2 · 2026.04.12</div>
+                <div style="padding:10px 0;font-size:12px;color:var(--gray-600)">박성실 Lv.1 → 2 · 2026.03.08</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════ M-9 경력 리포트 -->
+  <div class="screen-wrap">
+    <div class="screen-label">M-9</div>
+    <div class="screen-name">지원자 경력 리포트</div>
+    <div class="phone">
+      <div class="phone-inner">
+        <div class="status-bar light">
+          <span>9:41</span>
+          <div class="status-icons">
+            <svg width="16" height="12" viewBox="0 0 16 12" fill="var(--gray-700)"><rect x="0" y="3" width="3" height="9" rx="1"/><rect x="4.5" y="2" width="3" height="10" rx="1"/><rect x="9" y="0" width="3" height="12" rx="1"/><rect x="13.5" y="1" width="2.5" height="10" rx="1" opacity=".3"/></svg>
+            <svg width="24" height="12" viewBox="0 0 24 12" fill="none"><rect x=".5" y=".5" width="20" height="11" rx="3.5" stroke="var(--gray-400)"/><rect x="2" y="2" width="15" height="8" rx="2" fill="var(--gray-800)"/><path d="M22 4v4a2 2 0 000-4z" fill="var(--gray-400)"/></svg>
+          </div>
+        </div>
+        <div class="screen-content">
+          <div class="top-bar" style="background:var(--primary-900);border:none">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.6)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            <span style="font-size:14px;font-weight:700;color:rgba(255,255,255,.9);flex:1;text-align:center">경력 리포트</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.6)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          </div>
+
+          <div class="screen-scroll">
+            <!-- 프로필 히어로 -->
+            <div class="profile-hero">
+              <div style="display:flex;align-items:center;gap:12px;margin-bottom:4px">
+                <div style="width:44px;height:44px;background:rgba(255,255,255,.1);border-radius:50%;display:flex;align-items:center;justify-content:center">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+                </div>
+                <div>
+                  <div style="font-size:17px;font-weight:800;color:var(--white)">김알바</div>
+                  <div style="font-size:11px;color:rgba(255,255,255,.5);margin-top:2px">Lv.2 성실 알바생</div>
+                </div>
+              </div>
+              <div style="font-family:'Inter',monospace;font-size:10px;color:rgba(255,255,255,.3);margin-bottom:12px;padding-left:2px">0x7c3d...2a91</div>
+              <div class="profile-stat-grid">
+                <div class="profile-stat">
+                  <div class="profile-stat-val">142<span style="font-size:11px;font-weight:500">일</span></div>
+                  <div class="profile-stat-label">총 근무</div>
+                </div>
+                <div class="profile-stat">
+                  <div class="profile-stat-val">2<span style="font-size:11px;font-weight:500">곳</span></div>
+                  <div class="profile-stat-label">매장</div>
+                </div>
+                <div class="profile-stat">
+                  <div class="profile-stat-val">2<span style="font-size:11px;font-weight:500">개</span></div>
+                  <div class="profile-stat-label">배지</div>
+                </div>
+              </div>
+            </div>
+
+            <div style="padding:14px 16px;display:flex;flex-direction:column;gap:14px">
+              <!-- EAS 배지 -->
+              <div style="display:flex;gap:6px;flex-wrap:wrap">
+                <span class="badge badge-dark">온체인 검증됨</span>
+                <span class="badge badge-primary">EAS · Sepolia</span>
+              </div>
+
+              <!-- 근무 이력 -->
+              <div>
+                <div style="font-size:11px;font-weight:700;color:var(--gray-500);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px">근무 이력</div>
+                <div style="display:flex;flex-direction:column;gap:6px">
+                  <div style="border:1.5px solid var(--gray-100);border-radius:12px;padding:12px 14px">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start">
+                      <div>
+                        <div style="font-size:13px;font-weight:700;color:var(--gray-900)">맥도날드 신촌점</div>
+                        <div style="font-size:11px;color:var(--gray-400);margin-top:2px">2024.03 – 현재 · 142일</div>
+                      </div>
+                      <div style="text-align:right">
+                        <div style="font-size:11px;color:var(--gray-400)">지각 1회</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div style="border:1.5px solid var(--gray-100);border-radius:12px;padding:12px 14px">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start">
+                      <div>
+                        <div style="font-size:13px;font-weight:700;color:var(--gray-900)">스타벅스 강남점</div>
+                        <div style="font-size:11px;color:var(--gray-400);margin-top:2px">2025.06 – 2025.12 · 98일</div>
+                      </div>
+                      <div style="text-align:right">
+                        <div style="font-size:11px;color:var(--gray-400)">지각 2회</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 획득 배지 -->
+              <div>
+                <div style="font-size:11px;font-weight:700;color:var(--gray-500);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px">획득 배지</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                  <div style="border:1.5px solid var(--gray-100);border-radius:12px;padding:12px;text-align:center">
+                    <div style="width:36px;height:36px;background:var(--primary-100);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 6px">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--primary-700)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg>
+                    </div>
+                    <div style="font-size:11px;font-weight:700;color:var(--gray-900)">6개월 근속</div>
+                    <div style="font-size:9px;color:var(--gray-400);margin-top:2px;font-family:'Inter',monospace">EAS_EXP</div>
+                  </div>
+                  <div style="border:1.5px solid var(--gray-100);border-radius:12px;padding:12px;text-align:center">
+                    <div style="width:36px;height:36px;background:#fef3c7;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 6px">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    </div>
+                    <div style="font-size:11px;font-weight:700;color:var(--gray-900)">성실 인증</div>
+                    <div style="font-size:9px;color:var(--gray-400);margin-top:2px;font-family:'Inter',monospace">EAS_FAITH</div>
+                  </div>
+                  <div style="border:1.5px solid var(--gray-100);border-radius:12px;padding:12px;text-align:center;opacity:.4;filter:grayscale(1)">
+                    <div style="width:36px;height:36px;background:var(--gray-100);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 6px">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--gray-500)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+                    </div>
+                    <div style="font-size:11px;font-weight:700;color:var(--gray-900)">경력 완성</div>
+                    <div style="font-size:9px;color:var(--gray-400);margin-top:2px">잠금</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- EAS Explorer 버튼 -->
+              <button class="btn btn-outline btn-lg" style="gap:6px">
+                EAS Explorer에서 확인
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

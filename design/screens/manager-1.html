@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Manager Screens 1 · Alba-SBT</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;900&family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+    :root {
+      --primary-900: #061e36; --primary-800: #0b3260; --primary-700: #0b4c86;
+      --primary-600: #1160a4; --primary-500: #1a78c8; --primary-400: #4096d8;
+      --primary-300: #74b5e6; --primary-200: #b0d4f1; --primary-100: #dceef9; --primary-50: #f0f7fd;
+      --gray-900: #111827; --gray-800: #1f2937; --gray-700: #374151; --gray-600: #4b5563;
+      --gray-500: #6b7280; --gray-400: #9ca3af; --gray-300: #d1d5db; --gray-200: #e5e7eb;
+      --gray-100: #f3f4f6; --gray-50: #f9fafb; --white: #ffffff;
+      --success-500: #22c55e; --success-100: #dcfce7;
+      --error-500: #ef4444; --error-100: #fee2e2;
+      --warning-500: #f59e0b; --warning-100: #fef3c7;
+      --font: 'Noto Sans KR', 'Inter', sans-serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: var(--font); background: #0f172a; min-height: 100vh; padding: 48px 32px; }
+
+    .page-header { text-align: center; margin-bottom: 48px; }
+    .page-header h1 { font-size: 13px; font-weight: 600; color: rgba(255,255,255,.35); letter-spacing: .12em; text-transform: uppercase; margin-bottom: 8px; }
+    .page-header p { font-size: 22px; font-weight: 700; color: rgba(255,255,255,.85); }
+
+    .screens { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; max-width: 1040px; margin: 0 auto; }
+    .screen-wrap { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+    .screen-label { font-size: 11px; font-weight: 600; color: rgba(255,255,255,.35); letter-spacing: .1em; text-transform: uppercase; }
+    .screen-name { font-size: 14px; font-weight: 600; color: rgba(255,255,255,.7); margin-top: 2px; }
+
+    .phone { width: 300px; background: var(--gray-50); border-radius: 44px; overflow: hidden; box-shadow: 0 0 0 8px #1e293b, 0 0 0 10px #334155, 0 32px 64px rgba(0,0,0,.6); flex-shrink: 0; }
+    .phone-inner { height: 620px; overflow: hidden; display: flex; flex-direction: column; }
+
+    .status-bar { height: 44px; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; flex-shrink: 0; font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 600; }
+    .status-bar.light { background: var(--white); color: var(--gray-800); }
+    .status-icons { display: flex; align-items: center; gap: 5px; }
+
+    .screen-content { flex: 1; background: var(--white); display: flex; flex-direction: column; overflow: hidden; }
+    .screen-scroll { flex: 1; overflow-y: auto; overflow-x: hidden; }
+    .screen-scroll::-webkit-scrollbar { display: none; }
+
+    .top-bar { padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--gray-100); background: var(--white); flex-shrink: 0; }
+    .top-bar-left { display: flex; flex-direction: column; gap: 1px; }
+    .top-bar-greeting { font-size: 15px; font-weight: 700; color: var(--gray-900); }
+    .top-bar-wallet { font-size: 10px; font-weight: 500; color: var(--gray-400); font-family: 'Inter', monospace; }
+
+    /* Home tabs */
+    .home-tabs { display: flex; border-bottom: 1px solid var(--gray-100); flex-shrink: 0; background: var(--white); }
+    .home-tab { flex: 1; padding: 13px 0; text-align: center; font-size: 14px; font-weight: 600; color: var(--gray-400); cursor: pointer; position: relative; }
+    .home-tab.active { color: var(--primary-700); }
+    .home-tab.active::after { content: ''; position: absolute; bottom: 0; left: 20%; right: 20%; height: 2px; background: var(--primary-700); border-radius: 2px 2px 0 0; }
+
+    /* Store card */
+    .store-card { padding: 16px; background: var(--white); border: 1.5px solid var(--gray-100); border-radius: 16px; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: border-color .15s; }
+    .store-card:hover { border-color: var(--primary-300); }
+    .store-icon { width: 44px; height: 44px; background: var(--gray-100); border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .store-info { flex: 1; }
+    .store-name { font-size: 14px; font-weight: 700; color: var(--gray-900); }
+    .store-cat { font-size: 11px; color: var(--gray-400); margin-top: 1px; }
+    .store-stats { display: flex; gap: 10px; margin-top: 6px; }
+    .store-stat { font-size: 11px; color: var(--gray-500); }
+    .store-stat strong { color: var(--gray-900); font-weight: 700; }
+
+    /* Btn */
+    .btn { display: flex; align-items: center; justify-content: center; gap: 8px; font-family: var(--font); font-weight: 600; border: none; cursor: pointer; line-height: 1; border-radius: 12px; transition: all .15s; }
+    .btn-primary { background: var(--primary-700); color: var(--white); box-shadow: 0 4px 16px rgba(11,76,134,.3); }
+    .btn-outline { background: transparent; color: var(--primary-700); border: 1.5px solid var(--primary-200); }
+    .btn-outline-dashed { background: transparent; color: var(--gray-500); border: 1.5px dashed var(--gray-300); border-radius: 12px; }
+    .btn-sm { font-size: 12px; padding: 8px 14px; border-radius: 8px; }
+    .btn-lg { font-size: 15px; padding: 15px 24px; width: 100%; }
+
+    /* Tab bar */
+    .tab-bar { display: flex; background: var(--white); border-top: 1px solid var(--gray-100); box-shadow: 0 -2px 12px rgba(0,0,0,.05); flex-shrink: 0; }
+    .tab-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px 4px 12px; gap: 3px; }
+    .tab-item.active { color: var(--primary-700); }
+    .tab-item:not(.active) { color: var(--gray-400); }
+    .tab-label { font-size: 10px; font-weight: 600; }
+
+    /* Badge */
+    .badge { display: inline-flex; align-items: center; font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 4px; }
+    .badge-success { border: 1px solid #86efac; color: #15803d; }
+    .badge-gray { border: 1px solid var(--gray-300); color: var(--gray-500); }
+    .badge-primary { border: 1px solid var(--primary-300); color: var(--primary-700); }
+    .badge-warning { border: 1px solid #fcd34d; color: #92400e; }
+
+    /* Section */
+    .section-label { font-size: 11px; font-weight: 700; color: var(--gray-500); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 10px; }
+
+    /* List item */
+    .list-item { display: flex; align-items: center; gap: 10px; padding: 12px 0; border-bottom: 1px solid var(--gray-100); }
+    .list-item:last-child { border-bottom: none; }
+    .list-avatar { width: 36px; height: 36px; background: var(--primary-50); border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .list-info { flex: 1; }
+    .list-name { font-size: 13px; font-weight: 600; color: var(--gray-900); }
+    .list-sub { font-size: 11px; color: var(--gray-400); margin-top: 1px; }
+
+    /* Recent verify item */
+    .verify-item { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: var(--white); border: 1.5px solid var(--gray-100); border-radius: 12px; margin-bottom: 8px; }
+
+    /* Form */
+    .form-section-title { font-size: 12px; font-weight: 700; color: var(--gray-400); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 10px; margin-top: 4px; }
+    .input-group { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; }
+    .input-label { font-size: 11px; font-weight: 600; color: var(--gray-500); }
+    .input { width: 100%; font-family: var(--font); font-size: 13px; color: var(--gray-900); background: var(--white); border: 1.5px solid var(--gray-200); border-radius: 10px; padding: 11px 13px; outline: none; }
+    .input::placeholder { color: var(--gray-400); }
+    .input-select { display: flex; align-items: center; justify-content: space-between; padding: 11px 13px; border: 1.5px solid var(--gray-200); border-radius: 10px; background: var(--white); }
+    .input-select span { font-size: 13px; color: var(--gray-900); font-weight: 500; }
+    .addr-box { padding: 11px 13px; background: var(--gray-50); border: 1.5px solid var(--gray-200); border-radius: 10px; font-size: 13px; color: var(--gray-600); }
+
+    /* Step bar */
+    .step-bar { display: flex; gap: 4px; margin-bottom: 20px; }
+    .step-seg { height: 3px; flex: 1; border-radius: 2px; background: var(--gray-200); }
+    .step-seg.done { background: var(--primary-700); }
+    .step-seg.active { background: var(--primary-400); }
+  </style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>Alba-SBT · Manager Screens</h1>
+  <p>사장님 화면 · M-1 ~ M-3</p>
+</div>
+
+<div class="screens">
+
+  <!-- ══════════════════════════════════════════ M-1 홈 매장관리 -->
+  <div class="screen-wrap">
+    <div class="screen-label">M-1</div>
+    <div class="screen-name">홈 — 매장 관리</div>
+    <div class="phone">
+      <div class="phone-inner">
+        <div class="status-bar light">
+          <span>9:41</span>
+          <div class="status-icons">
+            <svg width="16" height="12" viewBox="0 0 16 12" fill="var(--gray-700)"><rect x="0" y="3" width="3" height="9" rx="1"/><rect x="4.5" y="2" width="3" height="10" rx="1"/><rect x="9" y="0" width="3" height="12" rx="1"/><rect x="13.5" y="1" width="2.5" height="10" rx="1" opacity=".3"/></svg>
+            <svg width="24" height="12" viewBox="0 0 24 12" fill="none"><rect x=".5" y=".5" width="20" height="11" rx="3.5" stroke="var(--gray-400)"/><rect x="2" y="2" width="15" height="8" rx="2" fill="var(--gray-800)"/><path d="M22 4v4a2 2 0 000-4z" fill="var(--gray-400)"/></svg>
+          </div>
+        </div>
+        <div class="screen-content">
+          <div class="top-bar">
+            <div class="top-bar-left">
+              <div class="top-bar-greeting">안녕하세요, 홍사장님</div>
+              <div class="top-bar-wallet">0x9a1b...4f22</div>
+            </div>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--gray-400)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          </div>
+          <div class="home-tabs">
+            <div class="home-tab active">매장 관리</div>
+            <div class="home-tab">경력 검증</div>
+          </div>
+          <div class="screen-scroll">
+            <div style="padding:16px;display:flex;flex-direction:column;gap:10px">
+              <div class="store-card">
+                <div class="store-icon">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--gray-600)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                </div>
+                <div class="store-info">
+                  <div class="store-name">맥도날드 신촌점</div>
+                  <div class="store-cat">외식 · 패스트푸드</div>
+                  <div class="store-stats">
+                    <div class="store-stat">재직 <strong>3</strong>명</div>
+                    <div class="store-stat" style="color:var(--primary-600)">오늘 출근 <strong style="color:var(--primary-700)">2</strong>명</div>
+                  </div>
+                </div>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gray-300)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </div>
+              <div class="store-card">
+                <div class="store-icon">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--gray-600)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M17 8h1a4 4 0 010 8h-1M3 8h14v9a4 4 0 01-4 4H7a4 4 0 01-4-4V8zM6 1v3M10 1v3M14 1v3"/></svg>
+                </div>
+                <div class="store-info">
+                  <div class="store-name">스타벅스 강남점</div>
+                  <div class="store-cat">카페</div>
+                  <div class="store-stats">
+                    <div class="store-stat">재직 <strong>5</strong>명</div>
+                    <div class="store-stat" style="color:var(--primary-600)">오늘 출근 <strong style="color:var(--primary-700)">4</strong>명</div>
+                  </div>
+                </div>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gray-300)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </div>
+              <button class="btn btn-outline-dashed btn-lg" style="margin-top:4px;gap:6px">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                매장 등록하기
+              </button>
+            </div>
+          </div>
+          <div class="tab-bar">
+            <div class="tab-item active">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+              <span class="tab-label">매장 관리</span>
+            </div>
+            <div class="tab-item">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+              <span class="tab-label">인사 관리</span>
+            </div>
+            <div class="tab-item">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              <span class="tab-label">근태</span>
+            </div>
+            <div class="tab-item">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <span class="tab-label">경력 검증</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════ M-2 경력 검증 탭 -->
+  <div class="screen-wrap">
+    <div class="screen-label">M-2</div>
+    <div class="screen-name">홈 — 경력 검증</div>
+    <div class="phone">
+      <div class="phone-inner">
+        <div class="status-bar light">
+          <span>9:41</span>
+          <div class="status-icons">
+            <svg width="16" height="12" viewBox="0 0 16 12" fill="var(--gray-700)"><rect x="0" y="3" width="3" height="9" rx="1"/><rect x="4.5" y="2" width="3" height="10" rx="1"/><rect x="9" y="0" width="3" height="12" rx="1"/><rect x="13.5" y="1" width="2.5" height="10" rx="1" opacity=".3"/></svg>
+            <svg width="24" height="12" viewBox="0 0 24 12" fill="none"><rect x=".5" y=".5" width="20" height="11" rx="3.5" stroke="var(--gray-400)"/><rect x="2" y="2" width="15" height="8" rx="2" fill="var(--gray-800)"/><path d="M22 4v4a2 2 0 000-4z" fill="var(--gray-400)"/></svg>
+          </div>
+        </div>
+        <div class="screen-content">
+          <div class="top-bar">
+            <div class="top-bar-left">
+              <div class="top-bar-greeting">안녕하세요, 홍사장님</div>
+              <div class="top-bar-wallet">0x9a1b...4f22</div>
+            </div>
+          </div>
+          <div class="home-tabs">
+            <div class="home-tab">매장 관리</div>
+            <div class="home-tab active">경력 검증</div>
+          </div>
+          <div class="screen-scroll">
+            <div style="padding:20px 16px;display:flex;flex-direction:column;gap:0">
+              <!-- Hero -->
+              <div style="background:var(--primary-50);border-radius:16px;padding:24px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;margin-bottom:20px">
+                <div style="width:56px;height:56px;background:var(--primary-100);border-radius:16px;display:flex;align-items:center;justify-content:center">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--primary-700)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3M14 17h3M17 14v3"/></svg>
+                </div>
+                <div style="text-align:center">
+                  <div style="font-size:16px;font-weight:700;color:var(--gray-900);margin-bottom:6px">지원자 경력 검증</div>
+                  <div style="font-size:12px;color:var(--gray-500);line-height:1.6">포트폴리오 QR을 스캔하면<br>EAS/SBT 신뢰도 리포트를 즉시 조회합니다</div>
+                </div>
+                <button class="btn btn-primary" style="font-size:13px;padding:12px 20px;width:100%;border-radius:10px;gap:6px">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                  QR 스캔 시작
+                </button>
+              </div>
+
+              <div style="font-size:12px;font-weight:700;color:var(--gray-500);letter-spacing:.05em;text-transform:uppercase;margin-bottom:12px">최근 검증 내역</div>
+              <div class="verify-item">
+                <div class="list-avatar">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--primary-600)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+                </div>
+                <div style="flex:1">
+                  <div style="font-size:13px;font-weight:600;color:var(--gray-900)">김알바</div>
+                  <div style="font-size:11px;color:var(--gray-400);margin-top:1px">Lv.2 성실 알바생 · 2026.05.05 검증</div>
+                </div>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--gray-300)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </div>
+              <div class="verify-item">
+                <div class="list-avatar">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--primary-600)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+                </div>
+                <div style="flex:1">
+                  <div style="font-size:13px;font-weight:600;color:var(--gray-900)">이근면</div>
+                  <div style="font-size:11px;color:var(--gray-400);margin-top:1px">Lv.1 · 2026.05.03 검증</div>
+                </div>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--gray-300)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </div>
+            </div>
+          </div>
+          <div class="tab-bar">
+            <div class="tab-item">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+              <span class="tab-label">매장 관리</span>
+            </div>
+            <div class="tab-item">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+              <span class="tab-label">인사 관리</span>
+            </div>
+            <div class="tab-item">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              <span class="tab-label">근태</span>
+            </div>
+            <div class="tab-item active">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <span class="tab-label">경력 검증</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════ M-3 매장 등록 -->
+  <div class="screen-wrap">
+    <div class="screen-label">M-3</div>
+    <div class="screen-name">매장 등록</div>
+    <div class="phone">
+      <div class="phone-inner">
+        <div class="status-bar light">
+          <span>9:41</span>
+          <div class="status-icons">
+            <svg width="16" height="12" viewBox="0 0 16 12" fill="var(--gray-700)"><rect x="0" y="3" width="3" height="9" rx="1"/><rect x="4.5" y="2" width="3" height="10" rx="1"/><rect x="9" y="0" width="3" height="12" rx="1"/><rect x="13.5" y="1" width="2.5" height="10" rx="1" opacity=".3"/></svg>
+            <svg width="24" height="12" viewBox="0 0 24 12" fill="none"><rect x=".5" y=".5" width="20" height="11" rx="3.5" stroke="var(--gray-400)"/><rect x="2" y="2" width="15" height="8" rx="2" fill="var(--gray-800)"/><path d="M22 4v4a2 2 0 000-4z" fill="var(--gray-400)"/></svg>
+          </div>
+        </div>
+        <div class="screen-content">
+          <div class="top-bar" style="border-bottom:1px solid var(--gray-100)">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--gray-700)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            <span style="font-size:15px;font-weight:700;color:var(--gray-900)">매장 등록</span>
+            <div style="width:20px"></div>
+          </div>
+          <div class="screen-scroll">
+            <div style="padding:20px 20px 32px">
+              <div class="step-bar">
+                <div class="step-seg active"></div>
+                <div class="step-seg"></div>
+                <div class="step-seg"></div>
+              </div>
+              <div style="font-size:18px;font-weight:800;color:var(--gray-900);margin-bottom:4px;letter-spacing:-.02em">기본 정보</div>
+              <div style="font-size:12px;color:var(--gray-400);margin-bottom:20px">매장 이름과 업종을 입력해주세요</div>
+
+              <div class="form-section-title">매장 정보</div>
+              <div class="input-group">
+                <label class="input-label">매장명 <span style="color:#ef4444">*</span></label>
+                <input class="input" placeholder="맥도날드 신촌점" />
+              </div>
+              <div class="input-group">
+                <label class="input-label">업종 대분류 <span style="color:#ef4444">*</span></label>
+                <div class="input-select">
+                  <span>외식업</span>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--gray-400)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                </div>
+              </div>
+              <div class="input-group">
+                <label class="input-label">세부 업종 <span style="color:#ef4444">*</span></label>
+                <input class="input" placeholder="패스트푸드" />
+              </div>
+
+              <div class="form-section-title" style="margin-top:8px">위치</div>
+              <button class="btn btn-outline" style="width:100%;font-size:12px;padding:11px 16px;margin-bottom:8px;gap:6px;border-radius:10px">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                현재 위치 사용
+              </button>
+              <div class="addr-box">서울 서대문구 신촌로 83</div>
+
+              <div class="form-section-title" style="margin-top:16px">추가 정보 <span style="font-size:10px;color:var(--gray-400);font-weight:400;text-transform:none;letter-spacing:0">선택</span></div>
+              <div class="input-group">
+                <label class="input-label">사업자번호</label>
+                <input class="input" placeholder="000-00-00000" />
+              </div>
+              <div class="input-group">
+                <label class="input-label">연락처</label>
+                <input class="input" placeholder="02-0000-0000" />
+              </div>
+
+              <button class="btn btn-primary btn-lg" style="margin-top:8px">다음</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
