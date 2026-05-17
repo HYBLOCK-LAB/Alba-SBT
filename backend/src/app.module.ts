@@ -14,6 +14,7 @@ import { BadgesModule } from './modules/badges/badges.module';
 import { SbtTokensModule } from './modules/sbt-tokens/sbt-tokens.module';
 import { SbtMetadataModule } from './modules/sbt-metadata/sbt-metadata.module';
 import { UsersModule } from './modules/users/users.module';
+import { CareerReportModule } from './modules/career-report/career-report.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { UsersModule } from './modules/users/users.module';
     SbtTokensModule,
     SbtMetadataModule,
     UsersModule,
+    CareerReportModule,
   ],
 })
 export class AppModule {}
