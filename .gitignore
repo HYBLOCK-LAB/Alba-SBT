@@ -1,0 +1,16 @@
+.DS_Store
+.env
+.env.*
+!.env.example
+node_modules/
+dist/
+coverage/
+*.log
+.logs/
+
+contracts/.env
+contracts/artifacts/
+contracts/cache/
+contracts/deployments/
+contracts/hardhat-cache/
+contracts/out/
