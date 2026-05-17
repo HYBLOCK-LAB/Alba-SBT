@@ -53,11 +53,15 @@ export class Lv1MintService {
   async mintForSignup(params: MintInitialLevelParams): Promise<Lv1InitialMintResult> {
     const worker = getAddress(params.walletAddress);
     const contractAddress = this.getRequiredConfig('ALBA_SBT_CONTRACT_ADDRESS');
+    let txHash: string | null = null;
+    let tokenId: string | null = null;
+    let metadataUri: string | null = null;
+    let badgeImageUri: string | null = null;
 
     try {
-      const badgeImageUri = await this.resolveLevelOneBadgeImageUri();
+      badgeImageUri = await this.resolveLevelOneBadgeImageUri();
       const mintedAt = this.toKstIsoOffsetString();
-      const metadataUri = this.buildMetadataUri({
+      metadataUri = this.buildMetadataUri({
         badgeImageUri,
         mintedAt,
       });
@@ -70,15 +74,18 @@ export class Lv1MintService {
         throw new Error('민팅 영수증을 확인하지 못했습니다');
       }
 
-      const tokenId = this.extractTokenId(receipt.logs, worker);
+      txHash = receipt.hash;
+      tokenId = this.extractTokenId(receipt.logs, worker);
+      const mintedTokenId = tokenId!;
+      const mintedTxHash = txHash!;
       await this.insertSbtToken({
         user_id: params.userId,
-        token_id: tokenId,
+        token_id: mintedTokenId,
         level: 1,
         metadata_uri: metadataUri,
         badge_image_uri: badgeImageUri,
         contract_address: contractAddress,
-        transaction_hash: receipt.hash,
+        transaction_hash: mintedTxHash,
         minted_at: mintedAt,
       });
 
@@ -87,8 +94,8 @@ export class Lv1MintService {
       return {
         status: 'minted',
         level: 1,
-        tokenId,
-        txHash: receipt.hash,
+        tokenId: mintedTokenId,
+        txHash: mintedTxHash,
         metadataUri,
         badgeImageUri,
         reason: null,
@@ -104,10 +111,10 @@ export class Lv1MintService {
       return {
         status: 'failed',
         level: 1,
-        tokenId: null,
-        txHash: null,
-        metadataUri: null,
-        badgeImageUri: null,
+        tokenId,
+        txHash,
+        metadataUri,
+        badgeImageUri,
         reason,
       };
     }

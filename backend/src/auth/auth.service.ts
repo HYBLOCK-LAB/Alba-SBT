@@ -157,6 +157,11 @@ export class AuthService {
       walletAddress: data.wallet_address,
     });
 
+    if (initialMint.status === 'failed' && !initialMint.txHash) {
+      await this.deleteUserById(data.id);
+      throw new InternalServerErrorException('Lv.1 자동 민팅에 실패했습니다. 다시 시도해주세요');
+    }
+
     return {
       token,
       walletAddress: data.wallet_address,
@@ -225,6 +230,14 @@ export class AuthService {
     return data;
   }
 
+  private async deleteUserById(userId: string) {
+    const { error } = await this.supabase.client.from('users').delete().eq('id', userId);
+
+    if (error) {
+      throw new InternalServerErrorException('민팅 실패 후 사용자 롤백에 실패했습니다');
+    }
+  }
+
   private async signAccessToken(user: ExistingUserRow) {
     return this.jwtService.signAsync({
       sub: user.id,
@@ -273,8 +286,17 @@ export class AuthService {
   }
 
   private assertConfiguredSiweFields(siweMessage: SiweMessage) {
+    const expectedDomain = this.configService.get<string>('SIWE_DOMAIN');
     const expectedUri = this.configService.get<string>('SIWE_URI');
     const expectedChainId = this.configService.get<number>('SIWE_CHAIN_ID');
+
+    if (!expectedDomain || !expectedUri || expectedChainId === undefined || expectedChainId === null) {
+      throw new InternalServerErrorException('SIWE 검증 설정이 누락되었습니다');
+    }
+
+    if (siweMessage.domain !== expectedDomain) {
+      throw new UnauthorizedException('SIWE domain이 예상 값과 일치하지 않습니다');
+    }
 
     if (expectedUri && siweMessage.uri !== expectedUri) {
       throw new UnauthorizedException('SIWE URI가 예상 값과 일치하지 않습니다');
