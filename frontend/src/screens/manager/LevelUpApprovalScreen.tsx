@@ -66,7 +66,7 @@ export default function LevelUpApprovalScreen({ navigation, route }: ManagerScre
           params: [walletAddress, JSON.stringify(typed_data)],
         },
       });
-      await signApproval({ request_id: approval.request_id, signature });
+      await signApproval({ levelUpRequestId: approval.request_id, managerSignature: signature });
       setApprovals(prev => prev.filter(a => a.request_id !== approval.request_id));
       Alert.alert('승인 완료', `${approval.user_name}의 승급을 승인했습니다.`);
     } catch (e: any) {

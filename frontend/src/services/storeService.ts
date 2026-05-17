@@ -27,7 +27,13 @@ export function getStaffByStore(storeId: string) {
   return api.get<StaffAssignment[]>(`/staff-assignments/store/${storeId}`);
 }
 
-export function createStaffAssignment(body: { user_id: string; store_id: string }) {
+// TODO: 백엔드에 GET /staff-assignments/user/:userId 엔드포인트 추가 필요
+export function getMyStaffAssignments(userId: string) {
+  return api.get<StaffAssignment[]>(`/staff-assignments/user/${userId}`);
+}
+
+// CreateStaffAssignmentDto: { userId, storeId, staffNumber }
+export function createStaffAssignment(body: { userId: string; storeId: string; staffNumber: string }) {
   return api.post<StaffAssignment>('/staff-assignments', body);
 }
 

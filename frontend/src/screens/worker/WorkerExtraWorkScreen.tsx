@@ -6,7 +6,7 @@ import {
   applyExtraWork,
   type ExtraWorkRequest, type ExtraWorkApplication,
 } from '../../services/extraWorkService';
-import { getStoresByManager } from '../../services/storeService';
+import { getMyStaffAssignments } from '../../services/storeService';
 import { useAuthStore } from '../../store/authStore';
 import type { WorkerTabScreenProps } from '../../navigation/types';
 
@@ -26,9 +26,10 @@ export default function WorkerExtraWorkScreen({ navigation }: WorkerTabScreenPro
     if (!user) return;
     setLoading(true);
     try {
-      const stores = await getStoresByManager(user.id).catch(() => []);
+      const assignments = await getMyStaffAssignments(user.id).catch(() => []);
+      const activeStoreIds = assignments.filter(a => a.status === 'active').map(a => a.store_id);
       const allRequests = (await Promise.all(
-        stores.map(s => getExtraWorkRequests(s.id).catch(() => []))
+        activeStoreIds.map(id => getExtraWorkRequests(id).catch(() => []))
       )).flat();
       const myApps = await getMyExtraWorkApplications().catch(() => []);
       setRequests(allRequests);

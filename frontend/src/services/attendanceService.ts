@@ -13,11 +13,11 @@ export interface StoreTodayStatus {
   absent: { user_id: string; name: string }[];
 }
 
-export function clockIn(body: { store_id: string; qr_token: string; latitude: number; longitude: number }) {
+export function clockIn(body: { storeId: string; qrToken: string; latitude: number; longitude: number }) {
   return api.post<Attendance>('/attendance/clock-in', body);
 }
 
-export function clockOut(body: { store_id: string; latitude: number; longitude: number }) {
+export function clockOut(body: { storeId: string; qrToken: string; latitude: number; longitude: number; attendanceId?: string }) {
   return api.post<Attendance>('/attendance/clock-out', body);
 }
 

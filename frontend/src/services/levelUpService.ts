@@ -25,6 +25,16 @@ export interface SigningPayload {
   typed_data: Record<string, unknown>;
 }
 
+export interface CompleteSbtMintBody {
+  levelUpRequestId: string;
+  tokenId: string;
+  metadataUri: string;
+  badgeImageUri: string;
+  contractAddress: string;
+  transactionHash: string;
+  mintedAt?: string;
+}
+
 export function getLevelUpStatus(userId: string) {
   return api.get<LevelUpStatus>(`/level-up/status/${userId}`);
 }
@@ -41,10 +51,18 @@ export function getSigningPayload(requestId: string) {
   return api.get<SigningPayload>(`/approvals/requests/${requestId}/signing-payload`);
 }
 
-export function signApproval(body: { request_id: string; signature: string }) {
+// SignApprovalDto 필드: levelUpRequestId, workerAddress, level, nonce, sig1, managerSignature (모두 optional)
+export function signApproval(body: {
+  levelUpRequestId?: string;
+  workerAddress?: string;
+  level?: number;
+  nonce?: string;
+  sig1?: string;
+  managerSignature?: string;
+}) {
   return api.post<{ success: boolean }>('/approvals/sign', body);
 }
 
-export function completeSbtMint(body: { request_id: string; transaction_hash: string }) {
+export function completeSbtMint(body: CompleteSbtMintBody) {
   return api.post<{ success: boolean }>('/sbt-tokens/complete-mint', body);
 }

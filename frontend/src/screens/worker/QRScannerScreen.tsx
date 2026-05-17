@@ -76,12 +76,12 @@ export default function QRScannerScreen({ navigation }: WorkerScreenProps<'QRSca
 
     try {
       if (mode === '출근') {
-        await clockIn({ store_id: parsed.storeId, qr_token: parsed.token, ...loc });
+        await clockIn({ storeId: parsed.storeId, qrToken: parsed.token, ...loc });
         Alert.alert('출근 완료', '출근이 기록되었습니다.', [{
           text: '확인', onPress: () => { setScanned(false); if (navigation.canGoBack()) navigation.goBack(); },
         }]);
       } else {
-        await clockOut({ store_id: parsed.storeId, ...loc });
+        await clockOut({ storeId: parsed.storeId, qrToken: parsed.token, ...loc });
         Alert.alert('퇴근 완료', '퇴근이 기록되었습니다.', [{
           text: '확인', onPress: () => { setScanned(false); if (navigation.canGoBack()) navigation.goBack(); },
         }]);

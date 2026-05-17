@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { colors } from '../../constants/theme';
 import { useAuthStore } from '../../store/authStore';
-import { getStoresByManager } from '../../services/storeService';
+import { getMyStaffAssignments } from '../../services/storeService';
 import { getLevelUpStatus, type LevelUpStatus } from '../../services/levelUpService';
 import { shortenAddress } from '../../services/siwe';
 import type { Store } from '../../types';
@@ -64,10 +64,13 @@ export default function WorkerHomeScreen({ navigation }: WorkerTabScreenProps<'W
   useEffect(() => {
     if (!user) return;
     Promise.all([
-      getStoresByManager(user.id).catch(() => [] as Store[]),
+      getMyStaffAssignments(user.id).catch(() => []),
       getLevelUpStatus(user.id).catch(() => null),
-    ]).then(([s, l]) => {
-      setStores(s);
+    ]).then(([assignments, l]) => {
+      // store 정보는 assignment에 포함되거나, 별도로 가져와야 함
+      // 임시: store_id만 있는 경우 name 표시 불가 → 백엔드 응답에 store 정보 포함 가정
+      const storeList = assignments.map((a: any) => a.store ?? { id: a.store_id, name: a.store_id, category: '', deleted_at: null });
+      setStores(storeList as Store[]);
       setLevelStatus(l);
     }).finally(() => setLoading(false));
   }, [user]);

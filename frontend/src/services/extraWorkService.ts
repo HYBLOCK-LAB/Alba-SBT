@@ -3,9 +3,9 @@ import { api } from './api';
 export interface ExtraWorkRequest {
   id: string;
   store_id: string;
-  start_time: string;
-  end_time: string;
-  description?: string;
+  requested_date: string;
+  requested_start_time: string;
+  requested_end_time: string;
   created_at: string;
 }
 
@@ -17,11 +17,12 @@ export interface ExtraWorkApplication {
   created_at: string;
 }
 
+// requestedDate: 'YYYY-MM-DD', requestedStartTime/EndTime: 'HH:MM' (military time)
 export function createExtraWorkRequest(body: {
-  store_id: string;
-  start_time: string;
-  end_time: string;
-  description?: string;
+  storeId: string;
+  requestedDate: string;
+  requestedStartTime: string;
+  requestedEndTime: string;
 }) {
   return api.post<ExtraWorkRequest>('/extra-work/requests', body);
 }

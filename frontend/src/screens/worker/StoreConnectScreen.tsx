@@ -18,7 +18,8 @@ export default function StoreConnectScreen({ navigation }: WorkerScreenProps<'St
     setLoading(true);
     try {
       const store = await getStoreByCode(code);
-      await createStaffAssignment({ user_id: user.id, store_id: store.id });
+      const staffNumber = `S${Date.now().toString().slice(-6)}`;
+      await createStaffAssignment({ userId: user.id, storeId: store.id, staffNumber });
       Alert.alert('연결 요청 완료', `${store.name}에 연결 요청을 보냈습니다.\n사장님 승인 후 이용 가능합니다.`, [
         { text: '확인', onPress: () => navigation.goBack() },
       ]);
