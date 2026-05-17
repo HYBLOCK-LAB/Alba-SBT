@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator, Alert } from 'react-native';
 import * as Location from 'expo-location';
 import { colors } from '../../constants/theme';
+import { createStore } from '../../services/storeService';
 import type { ManagerScreenProps } from '../../navigation/types';
 
 function StepBar({ step }: { step: number }) {
@@ -46,6 +47,8 @@ export default function StoreRegisterScreen({ navigation }: ManagerScreenProps<'
   const [contact, setContact] = useState('');
   const [address, setAddress] = useState('');
   const [locationLoading, setLocationLoading] = useState(false);
+  const [coords, setCoords] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const handleGetLocation = async () => {
     setLocationLoading(true);
@@ -56,6 +59,7 @@ export default function StoreRegisterScreen({ navigation }: ManagerScreenProps<'
         return;
       }
       const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+      setCoords({ latitude: loc.coords.latitude, longitude: loc.coords.longitude });
       const [geo] = await Location.reverseGeocodeAsync({
         latitude: loc.coords.latitude,
         longitude: loc.coords.longitude,
@@ -120,10 +124,34 @@ export default function StoreRegisterScreen({ navigation }: ManagerScreenProps<'
           ))}
 
           <TouchableOpacity
-            onPress={() => setStep(3)}
+            onPress={async () => {
+              if (submitting) return;
+              setSubmitting(true);
+              try {
+                await createStore({
+                  name,
+                  category,
+                  sub_category: subCategory,
+                  address,
+                  latitude: coords?.latitude ?? 0,
+                  longitude: coords?.longitude ?? 0,
+                  gps_radius_meters: 50,
+                  business_number: bizNum || undefined,
+                  contact: contact || undefined,
+                });
+                setStep(3);
+              } catch (e: any) {
+                Alert.alert('등록 실패', e?.message ?? '다시 시도해 주세요.');
+              } finally {
+                setSubmitting(false);
+              }
+            }}
             style={{ paddingVertical: 16, borderRadius: 16, alignItems: 'center', marginTop: 28, marginBottom: 40, backgroundColor: colors.brand[700] }}
           >
-            <Text style={{ fontSize: 15, fontWeight: '700', color: '#fff' }}>등록 완료</Text>
+            {submitting
+              ? <ActivityIndicator color="#fff" />
+              : <Text style={{ fontSize: 15, fontWeight: '700', color: '#fff' }}>등록 완료</Text>
+            }
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>

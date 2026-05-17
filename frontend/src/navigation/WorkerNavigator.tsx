@@ -110,7 +110,6 @@ function WorkerTabNavigator() {
       <Tab.Screen
         name="WorkerAttendance"
         component={WorkerAttendanceScreen}
-        initialParams={{ storeId: 'mock-store-1' }}
         options={{
           tabBarLabel: '근태',
           tabBarIcon: ({ color }) => <CalIcon color={color} />,
@@ -119,7 +118,6 @@ function WorkerTabNavigator() {
       <Tab.Screen
         name="WorkerExtraWork"
         component={WorkerExtraWorkScreen}
-        initialParams={{ storeId: 'mock-store-1' }}
         options={{
           tabBarLabel: '추가근무',
           tabBarIcon: ({ color }) => <PlusIcon color={color} />,
