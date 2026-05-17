@@ -3,7 +3,9 @@ import {
   View, Text, TouchableOpacity, ActivityIndicator, Alert, Linking,
 } from 'react-native';
 import { colors } from '../../constants/theme';
-import { connectWalletConnect } from '../../services/walletService';
+import { connectWalletConnect, getWcClient } from '../../services/walletService';
+import { createSiweMessage } from '../../services/siwe';
+import { siweLogin, getUserByWallet } from '../../services/authService';
 import { useAuthStore } from '../../store/authStore';
 import type { AuthScreenProps } from '../../navigation/types';
 
@@ -48,40 +50,70 @@ function WalletOption({
   );
 }
 
+async function loginWithAddress(
+  address: string,
+  signMessage: (nonce: string) => Promise<string>,
+  setToken: (t: string) => void,
+  setWalletAddress: (a: string) => void,
+  setUser: (u: any) => void,
+) {
+  const nonce = Math.random().toString(36).slice(2);
+  const message = createSiweMessage(address, nonce);
+  const signature = await signMessage(nonce);
+
+  const { token, user } = await siweLogin(address, message, signature);
+  setToken(token);
+  setWalletAddress(address);
+  setUser(user);
+  return user;
+}
 
 export default function WalletConnectScreen({ navigation }: AuthScreenProps<'WalletConnect'>) {
   const [loadingMM, setLoadingMM] = useState(false);
   const [loadingWC, setLoadingWC] = useState(false);
-  const { setWalletAddress } = useAuthStore();
+  const { setToken, setWalletAddress, setUser } = useAuthStore();
 
-  const afterConnect = (address: string) => {
-    setWalletAddress(address);
-    navigation.navigate('AccountType');
+  const afterLogin = (user: any) => {
+    // 신규 유저면 AccountType으로, 기존 유저면 바로 홈으로
+    if (!user.account_type) {
+      navigation.navigate('AccountType');
+    } else {
+      navigation.reset({
+        index: 0,
+        routes: [{ name: user.account_type === 'manager' ? ('ManagerTab' as any) : ('WorkerTab' as any) }],
+      });
+    }
   };
 
   const handleMetaMask = async () => {
     setLoadingMM(true);
     try {
-      // WalletConnect URI 먼저 받아서 MetaMask 딥링크에 주입
-      const client = await import('../../services/walletService').then(m => m.getWcClient());
+      const client = await getWcClient();
       const { uri, approval } = await client.connect({
         requiredNamespaces: {
           eip155: {
             methods: ['eth_sign', 'personal_sign'],
-            chains: [`eip155:11155111`],
+            chains: ['eip155:11155111'],
             events: ['chainChanged', 'accountsChanged'],
           },
         },
       });
-      if (uri) {
-        // MetaMask 앱 자동 오픈 (모달 없이 바로)
-        const mmDeeplink = `metamask://wc?uri=${encodeURIComponent(uri)}`;
-        Linking.openURL(mmDeeplink);
-      }
+      if (uri) Linking.openURL(`metamask://wc?uri=${encodeURIComponent(uri)}`);
       const session = await approval();
       const accounts = session.namespaces.eip155?.accounts ?? [];
       const address = accounts[0]?.split(':')[2] ?? '';
-      afterConnect(address);
+
+      const signMessage = async (nonce: string) => {
+        const message = createSiweMessage(address, nonce);
+        return client.request<string>({
+          topic: session.topic,
+          chainId: 'eip155:11155111',
+          request: { method: 'personal_sign', params: [message, address] },
+        });
+      };
+
+      const user = await loginWithAddress(address, signMessage, setToken, setWalletAddress, setUser);
+      afterLogin(user);
     } catch (e: any) {
       Alert.alert('MetaMask 연결 실패', e?.message ?? '다시 시도해 주세요.');
     } finally {
@@ -92,12 +124,12 @@ export default function WalletConnectScreen({ navigation }: AuthScreenProps<'Wal
   const handleWalletConnect = async () => {
     setLoadingWC(true);
     try {
-      const client = await import('../../services/walletService').then(m => m.getWcClient());
+      const client = await getWcClient();
       const { uri, approval } = await client.connect({
         requiredNamespaces: {
           eip155: {
             methods: ['eth_sign', 'personal_sign'],
-            chains: [`eip155:11155111`],
+            chains: ['eip155:11155111'],
             events: ['chainChanged', 'accountsChanged'],
           },
         },
@@ -106,7 +138,18 @@ export default function WalletConnectScreen({ navigation }: AuthScreenProps<'Wal
       const session = await approval();
       const accounts = session.namespaces.eip155?.accounts ?? [];
       const address = accounts[0]?.split(':')[2] ?? '';
-      afterConnect(address);
+
+      const signMessage = async (nonce: string) => {
+        const message = createSiweMessage(address, nonce);
+        return client.request<string>({
+          topic: session.topic,
+          chainId: 'eip155:11155111',
+          request: { method: 'personal_sign', params: [message, address] },
+        });
+      };
+
+      const user = await loginWithAddress(address, signMessage, setToken, setWalletAddress, setUser);
+      afterLogin(user);
     } catch (e: any) {
       Alert.alert('WalletConnect 연결 실패', e?.message ?? '다시 시도해 주세요.');
     } finally {
@@ -153,7 +196,6 @@ export default function WalletConnectScreen({ navigation }: AuthScreenProps<'Wal
           </Text>
         </View>
       </View>
-
     </View>
   );
 }

@@ -1,24 +1,25 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { colors } from '../../constants/theme';
+import { useAuthStore } from '../../store/authStore';
+import { getStoresByManager } from '../../services/storeService';
+import { getStoreTodayStatus } from '../../services/attendanceService';
+import { shortenAddress } from '../../services/siwe';
+import type { Store } from '../../types';
 import type { ManagerTabScreenProps } from '../../navigation/types';
 
 function ChevronRight() {
   return (
     <View style={{ width: 16, height: 16, alignItems: 'center', justifyContent: 'center' }}>
       <View style={{
-        width: 6, height: 6,
-        borderTopWidth: 1.5, borderRightWidth: 1.5,
-        borderColor: colors.neutral[300],
-        transform: [{ rotate: '45deg' }],
+        width: 6, height: 6, borderTopWidth: 1.5, borderRightWidth: 1.5,
+        borderColor: colors.neutral[300], transform: [{ rotate: '45deg' }],
       }} />
     </View>
   );
 }
 
-function StoreCard({ name, cat, staff, today, onPress }: {
-  name: string; cat: string; staff: number; today: number; onPress: () => void;
-}) {
+function StoreCard({ store, onPress }: { store: Store & { todayCount: number }; onPress: () => void }) {
   return (
     <TouchableOpacity
       onPress={onPress}
@@ -33,11 +34,12 @@ function StoreCard({ name, cat, staff, today, onPress }: {
         </View>
       </View>
       <View className="flex-1">
-        <Text className="text-sm font-bold" style={{ color: colors.neutral[900] }}>{name}</Text>
-        <Text className="text-xs mt-0.5" style={{ color: colors.neutral[400] }}>{cat}</Text>
+        <Text className="text-sm font-bold" style={{ color: colors.neutral[900] }}>{store.name}</Text>
+        <Text className="text-xs mt-0.5" style={{ color: colors.neutral[400] }}>{store.category}</Text>
         <View className="flex-row gap-2.5 mt-1.5">
-          <Text className="text-xs" style={{ color: colors.neutral[500] }}>재직 <Text className="font-bold" style={{ color: colors.neutral[900] }}>{staff}</Text>명</Text>
-          <Text className="text-xs" style={{ color: colors.brand[600] }}>오늘 출근 <Text className="font-bold" style={{ color: colors.brand[700] }}>{today}</Text>명</Text>
+          <Text className="text-xs" style={{ color: colors.brand[600] }}>
+            오늘 출근 <Text className="font-bold" style={{ color: colors.brand[700] }}>{store.todayCount}</Text>명
+          </Text>
         </View>
       </View>
       <ChevronRight />
@@ -47,10 +49,7 @@ function StoreCard({ name, cat, staff, today, onPress }: {
 
 function VerifyItem({ name, sub }: { name: string; sub: string }) {
   return (
-    <View
-      className="flex-row items-center gap-2.5 p-3.5 rounded-xl mb-2"
-      style={{ borderWidth: 1.5, borderColor: colors.neutral[100] }}
-    >
+    <View className="flex-row items-center gap-2.5 p-3.5 rounded-xl mb-2" style={{ borderWidth: 1.5, borderColor: colors.neutral[100] }}>
       <View className="w-9 h-9 rounded-full items-center justify-center" style={{ backgroundColor: colors.brand[50] }}>
         <View style={{ width: 14, height: 14 }}>
           <View style={{ position: 'absolute', top: 0, left: 3, width: 8, height: 8, borderRadius: 4, borderWidth: 1.5, borderColor: colors.brand[600] }} />
@@ -67,24 +66,40 @@ function VerifyItem({ name, sub }: { name: string; sub: string }) {
 }
 
 export default function ManagerHomeScreen({ navigation }: ManagerTabScreenProps<'ManagerHome'>) {
+  const { user, walletAddress } = useAuthStore();
   const [activeTab, setActiveTab] = useState<'store' | 'verify'>('store');
+  const [stores, setStores] = useState<(Store & { todayCount: number })[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user) return;
+    getStoresByManager(user.id)
+      .then(async (list) => {
+        const withCount = await Promise.all(
+          list.map(async (s) => {
+            const status = await getStoreTodayStatus(s.id).catch(() => ({ present: [], absent: [] }));
+            return { ...s, todayCount: status.present.length };
+          })
+        );
+        setStores(withCount);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [user]);
 
   return (
     <View className="flex-1" style={{ backgroundColor: colors.neutral[0] }}>
-      {/* Header */}
       <View className="px-5 pt-14 pb-3 flex-row items-center justify-between" style={{ borderBottomWidth: 1, borderColor: colors.neutral[100] }}>
         <View>
-          <Text className="text-base font-bold" style={{ color: colors.neutral[900] }}>안녕하세요, 홍사장님</Text>
-          <Text className="text-xs font-medium" style={{ color: colors.neutral[400], fontVariant: ['tabular-nums'] }}>0x9a1b...4f22</Text>
-        </View>
-        <View style={{ width: 20, height: 20, alignItems: 'center', justifyContent: 'center' }}>
-          <View style={{ width: 5, height: 5, borderRadius: 2.5, backgroundColor: colors.neutral[400], position: 'absolute', top: 0 }} />
-          <View style={{ width: 5, height: 5, borderRadius: 2.5, backgroundColor: colors.neutral[400] }} />
-          <View style={{ width: 5, height: 5, borderRadius: 2.5, backgroundColor: colors.neutral[400], position: 'absolute', bottom: 0 }} />
+          <Text className="text-base font-bold" style={{ color: colors.neutral[900] }}>
+            안녕하세요, {user?.name ?? ''}님
+          </Text>
+          <Text className="text-xs font-medium" style={{ color: colors.neutral[400] }}>
+            {walletAddress ? shortenAddress(walletAddress) : ''}
+          </Text>
         </View>
       </View>
 
-      {/* Home tab bar */}
       <View className="flex-row" style={{ borderBottomWidth: 1, borderColor: colors.neutral[100] }}>
         {(['store', 'verify'] as const).map((tab) => {
           const label = tab === 'store' ? '매장 관리' : '경력 검증';
@@ -104,35 +119,37 @@ export default function ManagerHomeScreen({ navigation }: ManagerTabScreenProps<
         })}
       </View>
 
-      {/* Content */}
       {activeTab === 'store' ? (
-        <ScrollView className="flex-1 px-4 pt-4" showsVerticalScrollIndicator={false}>
-          <StoreCard
-            name="맥도날드 신촌점" cat="외식 · 패스트푸드" staff={3} today={2}
-            onPress={() => (navigation as any).navigate('StoreManagement', { storeId: '1' })}
-          />
-          <StoreCard
-            name="스타벅스 강남점" cat="카페" staff={5} today={4}
-            onPress={() => (navigation as any).navigate('StoreManagement', { storeId: '2' })}
-          />
-          {/* Dashed add button */}
-          <TouchableOpacity
-            onPress={() => (navigation as any).navigate('StoreRegister')}
-            activeOpacity={0.7}
-            className="flex-row items-center justify-center gap-2 py-4 mt-1 rounded-2xl"
-            style={{ borderWidth: 1.5, borderStyle: 'dashed', borderColor: colors.neutral[300] }}
-          >
-            <View style={{ width: 14, height: 14, alignItems: 'center', justifyContent: 'center' }}>
-              <View style={{ width: 12, height: 1.5, backgroundColor: colors.neutral[400], borderRadius: 1 }} />
-              <View style={{ width: 1.5, height: 12, backgroundColor: colors.neutral[400], borderRadius: 1, position: 'absolute' }} />
-            </View>
-            <Text className="text-sm font-semibold" style={{ color: colors.neutral[500] }}>매장 등록하기</Text>
-          </TouchableOpacity>
-          <View style={{ height: 24 }} />
-        </ScrollView>
+        loading ? (
+          <View className="flex-1 items-center justify-center">
+            <ActivityIndicator color={colors.brand[600]} />
+          </View>
+        ) : (
+          <ScrollView className="flex-1 px-4 pt-4" showsVerticalScrollIndicator={false}>
+            {stores.map(store => (
+              <StoreCard
+                key={store.id}
+                store={store}
+                onPress={() => (navigation as any).navigate('StoreManagement', { storeId: store.id })}
+              />
+            ))}
+            <TouchableOpacity
+              onPress={() => (navigation as any).navigate('StoreRegister')}
+              activeOpacity={0.7}
+              className="flex-row items-center justify-center gap-2 py-4 mt-1 rounded-2xl"
+              style={{ borderWidth: 1.5, borderStyle: 'dashed', borderColor: colors.neutral[300] }}
+            >
+              <View style={{ width: 14, height: 14, alignItems: 'center', justifyContent: 'center' }}>
+                <View style={{ width: 12, height: 1.5, backgroundColor: colors.neutral[400], borderRadius: 1 }} />
+                <View style={{ width: 1.5, height: 12, backgroundColor: colors.neutral[400], borderRadius: 1, position: 'absolute' }} />
+              </View>
+              <Text className="text-sm font-semibold" style={{ color: colors.neutral[500] }}>매장 등록하기</Text>
+            </TouchableOpacity>
+            <View style={{ height: 24 }} />
+          </ScrollView>
+        )
       ) : (
         <ScrollView className="flex-1 px-4 pt-4" showsVerticalScrollIndicator={false}>
-          {/* Hero card */}
           <View className="rounded-2xl p-5 mb-5 items-center gap-3" style={{ backgroundColor: colors.brand[50] }}>
             <View className="w-14 h-14 rounded-2xl items-center justify-center" style={{ backgroundColor: `${colors.brand[700]}20` }}>
               <View style={{ width: 28, height: 28 }}>
@@ -157,10 +174,6 @@ export default function ManagerHomeScreen({ navigation }: ManagerTabScreenProps<
               <Text className="text-sm font-bold text-white">QR 스캔 시작</Text>
             </TouchableOpacity>
           </View>
-
-          <Text className="text-xs font-bold mb-3 uppercase tracking-wider" style={{ color: colors.neutral[500] }}>최근 검증 내역</Text>
-          <VerifyItem name="김알바" sub="Lv.2 성실 알바생 · 2026.05.05 검증" />
-          <VerifyItem name="이근면" sub="Lv.1 · 2026.05.03 검증" />
           <View style={{ height: 24 }} />
         </ScrollView>
       )}

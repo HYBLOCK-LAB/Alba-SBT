@@ -1,8 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, Alert, AppState, StyleSheet, Dimensions } from 'react-native';
+import {
+  View, Text, TouchableOpacity, Alert, AppState, StyleSheet, Dimensions,
+} from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Location from 'expo-location';
 import { colors } from '../../constants/theme';
+import { clockIn, clockOut } from '../../services/attendanceService';
 import type { WorkerScreenProps } from '../../navigation/types';
 
 type ScanMode = '출근' | '퇴근';
@@ -27,14 +30,14 @@ export default function QRScannerScreen({ navigation }: WorkerScreenProps<'QRSca
   const [mode, setMode] = useState<ScanMode>('출근');
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
+  const [processing, setProcessing] = useState(false);
   const [gpsStatus, setGpsStatus] = useState<'checking' | 'ok' | 'denied' | 'error'>('checking');
+  const locationRef = useRef<{ latitude: number; longitude: number } | null>(null);
   const appState = useRef(AppState.currentState);
 
   useEffect(() => {
     const sub = AppState.addEventListener('change', (next) => {
-      if (appState.current.match(/inactive|background/) && next === 'active') {
-        setScanned(false);
-      }
+      if (appState.current.match(/inactive|background/) && next === 'active') setScanned(false);
       appState.current = next;
     });
     return () => sub.remove();
@@ -45,7 +48,8 @@ export default function QRScannerScreen({ navigation }: WorkerScreenProps<'QRSca
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') { setGpsStatus('denied'); return; }
       try {
-        await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        locationRef.current = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
         setGpsStatus('ok');
       } catch {
         setGpsStatus('error');
@@ -53,19 +57,42 @@ export default function QRScannerScreen({ navigation }: WorkerScreenProps<'QRSca
     })();
   }, []);
 
-  const handleBarCodeScanned = ({ data }: { data: string }) => {
-    if (scanned) return;
+  const handleBarCodeScanned = async ({ data }: { data: string }) => {
+    if (scanned || processing) return;
     setScanned(true);
-    // TODO: POST /api/attendance with { qrData: data, type: mode }
-    Alert.alert(`${mode} 완료`, `QR 인식 성공`, [
-      {
-        text: '확인',
-        onPress: () => {
-          setScanned(false);
-          if (navigation.canGoBack()) navigation.goBack();
-        },
-      },
-    ]);
+    setProcessing(true);
+
+    // QR 데이터 형식: JSON { storeId, token }
+    let parsed: { storeId: string; token: string } | null = null;
+    try {
+      parsed = JSON.parse(data);
+    } catch {
+      Alert.alert('오류', '유효하지 않은 QR 코드입니다.', [{ text: '확인', onPress: () => setScanned(false) }]);
+      setProcessing(false);
+      return;
+    }
+
+    const loc = locationRef.current ?? { latitude: 0, longitude: 0 };
+
+    try {
+      if (mode === '출근') {
+        await clockIn({ store_id: parsed.storeId, qr_token: parsed.token, ...loc });
+        Alert.alert('출근 완료', '출근이 기록되었습니다.', [{
+          text: '확인', onPress: () => { setScanned(false); if (navigation.canGoBack()) navigation.goBack(); },
+        }]);
+      } else {
+        await clockOut({ store_id: parsed.storeId, ...loc });
+        Alert.alert('퇴근 완료', '퇴근이 기록되었습니다.', [{
+          text: '확인', onPress: () => { setScanned(false); if (navigation.canGoBack()) navigation.goBack(); },
+        }]);
+      }
+    } catch (e: any) {
+      Alert.alert(`${mode} 실패`, e?.message ?? '다시 시도해 주세요.', [
+        { text: '확인', onPress: () => setScanned(false) },
+      ]);
+    } finally {
+      setProcessing(false);
+    }
   };
 
   if (!permission) return <View style={{ flex: 1, backgroundColor: '#0a0a0a' }} />;
@@ -91,7 +118,6 @@ export default function QRScannerScreen({ navigation }: WorkerScreenProps<'QRSca
 
   return (
     <View style={{ flex: 1, backgroundColor: '#0a0a0a' }}>
-      {/* 카메라 */}
       <CameraView
         style={StyleSheet.absoluteFill}
         facing="back"
@@ -99,50 +125,19 @@ export default function QRScannerScreen({ navigation }: WorkerScreenProps<'QRSca
         onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
       />
 
-      {/* 상단 dim + 상단바 */}
       <View style={{ position: 'absolute', top: 0, left: 0, right: 0, backgroundColor: 'rgba(0,0,0,0.5)', paddingTop: 56, paddingBottom: 16, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' }}
-          activeOpacity={0.7}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
+        <TouchableOpacity onPress={() => navigation.goBack()} style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' }} activeOpacity={0.7} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
           <View style={{ width: 10, height: 10, borderLeftWidth: 2, borderBottomWidth: 2, borderColor: '#fff', transform: [{ rotate: '45deg' }] }} />
         </TouchableOpacity>
         <Text style={{ color: '#fff', fontSize: 16, fontWeight: '700' }}>QR 스캔</Text>
         <View style={{ width: 36 }} />
       </View>
 
-      {/* 좌측 dim */}
-      <View style={{
-        position: 'absolute',
-        top: 130, bottom: 280,
-        left: 0, width: (SCREEN_WIDTH - FINDER_SIZE) / 2,
-        backgroundColor: 'rgba(0,0,0,0.55)',
-      }} />
+      <View style={{ position: 'absolute', top: 130, bottom: 280, left: 0, width: (SCREEN_WIDTH - FINDER_SIZE) / 2, backgroundColor: 'rgba(0,0,0,0.55)' }} />
+      <View style={{ position: 'absolute', top: 130, bottom: 280, right: 0, width: (SCREEN_WIDTH - FINDER_SIZE) / 2, backgroundColor: 'rgba(0,0,0,0.55)' }} />
+      <View style={{ position: 'absolute', top: 110, left: 0, right: 0, height: 20, backgroundColor: 'rgba(0,0,0,0.55)' }} />
 
-      {/* 우측 dim */}
-      <View style={{
-        position: 'absolute',
-        top: 130, bottom: 280,
-        right: 0, width: (SCREEN_WIDTH - FINDER_SIZE) / 2,
-        backgroundColor: 'rgba(0,0,0,0.55)',
-      }} />
-
-      {/* 중간 dim (뷰파인더 위) */}
-      <View style={{
-        position: 'absolute',
-        top: 110, left: 0, right: 0, height: 20,
-        backgroundColor: 'rgba(0,0,0,0.55)',
-      }} />
-
-      {/* 뷰파인더 */}
-      <View style={{
-        position: 'absolute',
-        top: 130, bottom: 280,
-        left: 0, right: 0,
-        alignItems: 'center', justifyContent: 'center',
-      }}>
+      <View style={{ position: 'absolute', top: 130, bottom: 280, left: 0, right: 0, alignItems: 'center', justifyContent: 'center' }}>
         <View style={{ width: FINDER_SIZE, height: FINDER_SIZE }}>
           <Corner position="tl" />
           <Corner position="tr" />
@@ -161,9 +156,7 @@ export default function QRScannerScreen({ navigation }: WorkerScreenProps<'QRSca
         </View>
       </View>
 
-      {/* 하단 패널 */}
       <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, borderTopLeftRadius: 24, borderTopRightRadius: 24, backgroundColor: colors.neutral[0], paddingHorizontal: 20, paddingTop: 16, paddingBottom: 40 }}>
-        {/* 출근/퇴근 토글 */}
         <View style={{ flexDirection: 'row', backgroundColor: colors.neutral[100], borderRadius: 12, padding: 4, marginBottom: 14 }}>
           {(['출근', '퇴근'] as ScanMode[]).map((m) => (
             <TouchableOpacity
@@ -184,7 +177,6 @@ export default function QRScannerScreen({ navigation }: WorkerScreenProps<'QRSca
           매장 QR 코드를 화면 안에 맞춰주세요
         </Text>
 
-        {/* GPS 상태 */}
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 12, borderRadius: 12, backgroundColor: gpsBg }}>
           <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: gpsColor }} />
           <Text style={{ fontSize: 12, fontWeight: '500', color: gpsColor }}>{gpsText}</Text>
@@ -195,10 +187,5 @@ export default function QRScannerScreen({ navigation }: WorkerScreenProps<'QRSca
 }
 
 const styles = StyleSheet.create({
-  corner: {
-    position: 'absolute',
-    width: 28,
-    height: 28,
-    borderColor: '#fff',
-  },
+  corner: { position: 'absolute', width: 28, height: 28, borderColor: '#fff' },
 });
